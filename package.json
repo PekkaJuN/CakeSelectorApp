@@ -1,0 +1,23 @@
+{
+  "name": "cake-selector-app",
+  "version": "0.1.0",
+  "description": "Simple product and order management web application",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test 'tests/**/*.test.js'",
+    "db:init": "node scripts/init-db.js",
+    "db:reset": "rm -f cake-selector.db && npm run db:init"
+  },
+  "keywords": ["cake", "product", "order", "management"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.6",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {}
+}

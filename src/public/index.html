@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cake Selector App</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Cake Selector App</h1>
+
+    <div class="tabs">
+      <button class="tab-button active" data-tab="products">Products</button>
+      <button class="tab-button" data-tab="orders">Orders</button>
+    </div>
+
+    <!-- Products Tab -->
+    <div id="products-tab" class="tab-content active">
+      <h2>Products</h2>
+
+      <div class="add-product-form">
+        <input type="text" id="product-name" placeholder="Product name (e.g., Chocolate Cake)" />
+        <button id="add-product-btn">Add Product</button>
+      </div>
+      <div id="product-error" class="error-message"></div>
+
+      <div id="products-list" class="products-list">
+        <!-- Products will be rendered here -->
+      </div>
+    </div>
+
+    <!-- Orders Tab (placeholder) -->
+    <div id="orders-tab" class="tab-content">
+      <h2>Orders</h2>
+      <p>Order management coming soon...</p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

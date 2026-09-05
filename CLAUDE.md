@@ -1,7 +1,5 @@
 # Claude Code Configuration
 
-This file contains configuration and guidelines for Claude Code assistance in the MyTrainingApp project.
+This file contains configuration and guidelines for Claude Code assistance in the CakeSelectorApp project.
 
-## Project Information
-
-See [AGENTS.md](./AGENTS.md) for project description and details.
+echo "@AGENTS.md" > CLAUDE.md
