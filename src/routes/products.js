@@ -158,22 +158,33 @@ router.post('/values/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/propertyValues/:id - Delete property value
-router.delete('/values/:id', async (req, res) => {
+// PUT /api/propertyValues/:id - Edit property value
+router.put('/values/:id', async (req, res) => {
   const { id } = req.params;
+  const { value } = req.body;
+
+  if (!value || value.trim() === '') {
+    return res.status(400).json({ error: 'Value is required' });
+  }
 
   try {
-    const value = await db.getPropertyValue(id);
-    if (!value) {
+    const propValue = await db.getPropertyValue(id);
+    if (!propValue) {
       return res.status(404).json({ error: 'Value not found' });
     }
 
-    await db.deletePropertyValue(id);
-    res.json({ deleted: id });
+    await db.updatePropertyValue(id, value);
+    const updated = await db.getPropertyValue(id);
+    res.json(updated);
   } catch (error) {
-    console.error('Error deleting property value:', error);
+    console.error('Error updating property value:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+// DELETE /api/propertyValues/:id - Delete property value (not implemented - values cannot be deleted)
+router.delete('/values/:id', async (req, res) => {
+  res.status(405).json({ error: 'Property values cannot be deleted, only edited' });
 });
 
 export default router;

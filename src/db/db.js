@@ -90,6 +90,10 @@ export const getPropertyValue = (id) => {
   return dbGet('SELECT * FROM propertyValues WHERE id = ?', [id]);
 };
 
+export const updatePropertyValue = (id, value) => {
+  return dbRun('UPDATE propertyValues SET value = ? WHERE id = ?', [value, id]);
+};
+
 export const deletePropertyValue = (id) => {
   return dbRun('DELETE FROM propertyValues WHERE id = ?', [id]);
 };
@@ -121,6 +125,54 @@ export const getAllProductsWithDetails = async () => {
     product.properties = properties;
   }
   return products;
+};
+
+// Orders
+export const createOrder = (id, customerName) => {
+  return dbRun('INSERT INTO orders (id, customerName) VALUES (?, ?)', [id, customerName]);
+};
+
+export const createOrderItem = (id, orderId, productId, selections) => {
+  return dbRun('INSERT INTO orderItems (id, orderId, productId, selections) VALUES (?, ?, ?, ?)',
+    [id, orderId, productId, JSON.stringify(selections)]);
+};
+
+export const getOrder = async (id) => {
+  const order = await dbGet('SELECT * FROM orders WHERE id = ?', [id]);
+  if (!order) return null;
+
+  const items = await dbAll('SELECT id, orderId, productId, selections, createdAt FROM orderItems WHERE orderId = ? ORDER BY createdAt ASC', [id]);
+  order.items = items.map(item => ({
+    ...item,
+    selections: JSON.parse(item.selections)
+  }));
+
+  return order;
+};
+
+export const updateOrder = (id, customerName) => {
+  return dbRun('UPDATE orders SET customerName = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?', [customerName, id]);
+};
+
+export const removeOrderItem = (itemId) => {
+  return dbRun('DELETE FROM orderItems WHERE id = ?', [itemId]);
+};
+
+export const deleteAllOrderItems = (orderId) => {
+  return dbRun('DELETE FROM orderItems WHERE orderId = ?', [orderId]);
+};
+
+export const getAllOrders = async () => {
+  const orders = await dbAll('SELECT id, customerName, createdAt, updatedAt FROM orders ORDER BY createdAt DESC');
+  for (const order of orders) {
+    const itemCount = await dbGet('SELECT COUNT(*) as count FROM orderItems WHERE orderId = ?', [order.id]);
+    order.itemCount = itemCount?.count || 0;
+  }
+  return orders;
+};
+
+export const deleteOrder = (id) => {
+  return dbRun('DELETE FROM orders WHERE id = ?', [id]);
 };
 
 export default db;

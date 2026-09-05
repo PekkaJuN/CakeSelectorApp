@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import productsRouter from './routes/products.js';
+import ordersRouter from './routes/orders.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -13,6 +14,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Routes
 app.use('/api/products', productsRouter);
+app.use('/api/orders', ordersRouter);
 
 // Serve index.html for all other routes (single-page app)
 app.get('*', (req, res) => {
