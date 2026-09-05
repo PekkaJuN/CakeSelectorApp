@@ -46,3 +46,61 @@
 > 3 · PRD"
 
 > "I what only my prompts, not result"
+
+---
+
+## Phase 5: Feature Specs (2026-09-05)
+
+> "Write the spec: Product management first"
+
+> "Edit PRD and product management spec. If a product is in order, then the product is not able to deleted."
+
+> "Do not do other changes"
+
+> "Write the spec: Property Value Management
+> Ground it in the research pass findings. Write
+> specs/features/«feature».md using the spec template structure.
+> Acceptance criteria as Given/When/Then, numbered AC1, AC2, …
+> Every one names a precise expected value or output — never
+> "a sensible message", never "works correctly".
+> Then run the Spec Readiness checklist and show the result
+> item by item."
+
+> "Edit PRD and property value management spec. A existing value of property is not able to deleted, only edited. Do not do other changes. Do not guest."
+
+> "Write the spec: Order Creation
+> Ground it in the research pass findings. Write
+> specs/features/«feature».md using the spec template structure.
+> Acceptance criteria as Given/When/Then, numbered AC1, AC2, …
+> Every one names a precise expected value or output — never
+> "a sensible message", never "works correctly".
+> Then run the Spec Readiness checklist and show the result
+> item by item."
+
+> "Write the spec: Order Editing
+> Ground it in the research pass findings. Write
+> specs/features/«feature».md using the spec template structure.
+> Acceptance criteria as Given/When/Then, numbered AC1, AC2, …
+> Every one names a precise expected value or output — never
+> "a sensible message", never "works correctly".
+> Then run the Spec Readiness checklist and show the result
+> item by item.
+
+> Do not do other changes"
+
+> "Write the spec: Order History
+> Ground it in the research pass findings. Write
+> specs/features/«feature».md using the spec template structure.
+> Acceptance criteria as Given/When/Then, numbered AC1, AC2, …
+> Every one names a precise expected value or output — never
+> "a sensible message", never "works correctly".
+> Then run the Spec Readiness checklist and show the result
+> item by item."
+
+> "Edit PRD and Order History spec. Order is not able to edit in Order History page, only view and delete. Do not do other changes. Do not guest."
+
+> "Why Order Item Management feature is needed? Do not do changes, only answer question"
+
+> "Edit PRD and delete Order Item Management. Do do not do other changes and do not guest."
+
+> "Update prompts.md with my today's prompts to following Phase 4 · Feature specs. Add only my today's prompts, not result"
