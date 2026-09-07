@@ -97,11 +97,11 @@ Smallest sensible step at a time, in order. Each task closes one or more ACs.
 
 ### Task 2.5: Delete product confirmation
 **Closes:** AC6 (UI test)
-- [ ] Implement "Delete" button → confirmation modal
-- [ ] Call `DELETE /api/products/:id` on confirm
-- [ ] Refresh list on success
-- [ ] Display error if delete fails
-- [ ] Test AC6: Delete product → confirmation modal, removed from list
+- [x] Implement "Delete" button → confirmation modal
+- [x] Call `DELETE /api/products/:id` on confirm
+- [x] Refresh list on success
+- [x] Display error if delete fails
+- [x] Test AC6: Delete product → confirmation modal, removed from list
 
 ### Task 2.6: Add property form
 **Closes:** AC8, AC9, AC10 (UI tests)

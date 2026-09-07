@@ -34,7 +34,7 @@ function renderProductsList(products) {
         <span class="product-name">${escapeHtml(product.name)}</span>
         <div class="product-actions">
           <button class="edit-btn" data-product-id="${product.id}" onclick="editProduct(this)">Edit</button>
-          <button class="delete-btn" onclick="deleteProduct('${product.id}')">Delete</button>
+          <button class="delete-btn" data-product-id="${product.id}" onclick="openDeleteProductModal(this)">Delete</button>
         </div>
       </div>
       <div class="properties-section" id="properties-${product.id}" style="display: none;">
@@ -172,25 +172,57 @@ document.getElementById('edit-product-name').addEventListener('keypress', (e) =>
   }
 });
 
-// Delete product
-async function deleteProduct(productId) {
-  if (!confirm('Are you sure you want to delete this product?')) return;
+// Event listener for confirm delete button
+document.getElementById('confirm-delete-btn').addEventListener('click', confirmDeleteProduct);
+
+// Global state for delete confirmation modal
+let deletingProductId = null;
+let deletingProductName = null;
+
+// Open delete confirmation modal
+function openDeleteProductModal(button) {
+  const productItem = button.closest('.product-item');
+  const propertiesSection = productItem.querySelector('[id^="properties-"]');
+  const sectionId = propertiesSection?.id;
+  deletingProductId = sectionId ? sectionId.replace('properties-', '') : null;
+
+  const productNameSpan = productItem.querySelector('.product-name');
+  deletingProductName = productNameSpan ? productNameSpan.textContent : '';
+
+  document.getElementById('delete-product-message').textContent =
+    `Are you sure you want to delete "${deletingProductName}"? This action cannot be undone.`;
+  document.getElementById('delete-product-error').textContent = '';
+  document.getElementById('delete-product-modal').style.display = 'flex';
+}
+
+// Close delete confirmation modal
+function closeDeleteProductModal() {
+  document.getElementById('delete-product-modal').style.display = 'none';
+  deletingProductId = null;
+  deletingProductName = null;
+}
+
+// Confirm and delete product
+async function confirmDeleteProduct() {
+  if (!deletingProductId) return;
 
   try {
-    const response = await fetch(`/api/products/${productId}`, {
+    const response = await fetch(`/api/products/${deletingProductId}`, {
       method: 'DELETE'
     });
 
     if (!response.ok) {
       const error = await response.json();
-      alert(error.error || 'Failed to delete product');
+      document.getElementById('delete-product-error').textContent =
+        error.error || 'Failed to delete product';
       return;
     }
 
+    closeDeleteProductModal();
     await loadProducts();
   } catch (error) {
     console.error('Error deleting product:', error);
-    alert('Error deleting product');
+    document.getElementById('delete-product-error').textContent = 'Error deleting product';
   }
 }
 
