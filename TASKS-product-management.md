@@ -135,10 +135,10 @@ Smallest sensible step at a time, in order. Each task closes one or more ACs.
 
 ### Task 3.1: CSS for Products tab
 **Closes:** None (UI polish)
-- [ ] Style product list (expandable rows, spacing)
-- [ ] Style forms (inputs, buttons, error messages in red)
-- [ ] Style nested properties/values (indentation, margins)
-- [ ] Ensure responsive layout (mobile-friendly)
+- [x] Style product list (expandable rows, spacing)
+- [x] Style forms (inputs, buttons, error messages in red)
+- [x] Style nested properties/values (indentation, margins)
+- [x] Ensure responsive layout (mobile-friendly)
 
 ---
 

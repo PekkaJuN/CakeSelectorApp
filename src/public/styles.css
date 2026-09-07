@@ -202,7 +202,7 @@ button {
 }
 
 .properties-section {
-  padding: 15px;
+  padding: 20px;
   background-color: #fafafa;
   border-top: 1px solid #eee;
 }
@@ -210,34 +210,69 @@ button {
 .properties-section > p {
   color: #999;
   font-size: 0.95em;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
 }
 
 .properties-list {
-  margin-bottom: 10px;
+  margin-bottom: 20px;
 }
 
 .property-item {
-  padding: 10px;
+  padding: 15px;
   background-color: white;
-  border: 1px solid #eee;
+  border: 1px solid #e0e0e0;
   border-radius: 4px;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
   align-items: center;
+  gap: 10px;
+}
+
+.property-item > span {
+  font-weight: 500;
+  flex: 0 0 auto;
+  min-width: 80px;
+}
+
+.property-item > button.delete-btn {
+  flex: 0 0 auto;
+}
+
+.property-item > p {
+  flex: 0 0 100%;
+  margin: 10px 0 0 0;
+  color: #999;
+  font-size: 0.9em;
+}
+
+.property-item > button.add-btn {
+  flex: 0 0 auto;
 }
 
 .values-list {
-  margin-left: 10px;
-  padding-left: 10px;
-  border-left: 2px solid #ddd;
+  flex: 0 0 100%;
+  margin: 15px 0 0 0;
+  padding-left: 20px;
+  border-left: 3px solid #2196F3;
 }
 
 .value-item {
-  padding: 5px 0;
-  font-size: 0.9em;
-  color: #666;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  font-size: 0.95em;
+  color: #333;
+  background-color: #f9f9f9;
+  border: 1px solid #e8e8e8;
+  border-radius: 3px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.value-item:last-child {
+  margin-bottom: 0;
 }
 
 /* Order Builder */
