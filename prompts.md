@@ -104,3 +104,37 @@
 > "Edit PRD and delete Order Item Management. Do do not do other changes and do not guest."
 
 > "Update prompts.md with my today's prompts to following Phase 4 · Feature specs. Add only my today's prompts, not result"
+
+---
+
+## Phase 6: Architecture & Test Plans (2026-09-07)
+
+> "Write the spec: «feature»
+
+> Ground it in the research pass findings. Write
+> specs/features/«feature».md using the spec template structure.
+
+> Acceptance criteria as Given/When/Then, numbered AC1, AC2, …
+> Every one names a precise expected value or output — never
+> "a sensible message", never "works correctly".
+
+> Then run the Spec Readiness checklist and show the result
+> item by item."
+
+> "Product management first"
+
+> "Do not overwrite Product Management details"
+
+> "Yes and rename Product Management files too"
+
+> "Product Management"
+
+> "Order Creation. Do not overwrite Product Management details"
+
+> "Order Editing with own files"
+
+> "Property Value Management with own files"
+
+> "Order History with own files"
+
+> "Update prompts.md with missing prompts to following Phase 5 · Feature specs. Add only missing prompts, not result. Keep earlier prompts"
