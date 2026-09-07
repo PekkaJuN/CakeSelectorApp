@@ -36,7 +36,7 @@ Smallest sensible step at a time, in order. Each task closes one or more ACs.
 - [ ] **Note:** AC7 (with order dependency) deferred until Order feature exists
 
 ### Task 1.5: Property CRUD API
-**Closes:** AC8, AC9, AC10
+**Closes:** AC8, AC9, AC10, AC11
 - [ ] Implement `POST /api/products/:id/properties` → validate name, insert, return 201 + property object
 - [ ] Implement `DELETE /api/properties/:id` → delete property and all its values, return 200
 - [ ] Test AC8: Add property to product → 201, UUID id, appears in GET /api/products
@@ -46,21 +46,44 @@ Smallest sensible step at a time, in order. Each task closes one or more ACs.
 - [ ] Test AC11: Delete property → 200, removed from database, other properties remain
 - [ ] Test AC11: Delete non-existent property → 404, "Property not found"
 
-### Task 1.6: Property value CRUD API
-**Closes:** AC12, AC13, AC14, AC15
-- [ ] Implement `POST /api/properties/:id/values` → validate value, insert, return 201 + value object
+### Task 1.6: Property value add/delete API
+**Closes:** AC12, AC13, AC14, AC15, AC16, AC17, AC18, AC19
+- [ ] Implement `POST /api/properties/:id/values` → validate value (not empty, not whitespace only), insert, return 201 + value object
 - [ ] Implement `DELETE /api/propertyValues/:id` → delete value, return 200
 - [ ] Test AC12: Add value to property → 201, UUID id, appears in nested structure
 - [ ] Test AC13: Add duplicate value text → 201, unique id, both in database
 - [ ] Test AC14: Add value with empty text → 400, "Value is required"
-- [ ] Test AC14: Add value to non-existent property → 404, "Property not found"
-- [ ] Test AC15: Delete property value → 200, removed, others remain
-- [ ] Test AC15: Delete non-existent value → 404, "Value not found"
+- [ ] Test AC15: Add value with whitespace only → 400, "Value is required"
+- [ ] Test AC16: Add value to non-existent property → 404, "Property not found"
+- [ ] Test AC17: Add value to property with multiple existing values → appended to list
+- [ ] Test AC18: Add value with special characters "dark & bitter" → stored and retrieved correctly
+- [ ] Test AC19: Add value with leading/trailing whitespace "  light  " → whitespace preserved
+- [ ] Test AC25: Delete property value → 200, removed, others remain
+- [ ] Test AC25: Delete non-existent value → 404, "Value not found"
+
+### Task 1.7: Property value retrieval and listing API
+**Closes:** AC20, AC21
+- [ ] Implement `GET /api/properties/:id/values` → return all values for property, ordered by createdAt
+- [ ] Test AC20: List values for property → 200, all values in creation order
+- [ ] Test AC21: List values when property has none → 200, returns []
+- [ ] Test retrieval: Ensure values appear in GET /api/products nested response
+
+### Task 1.8: Property value edit API
+**Closes:** AC22, AC23, AC24
+- [ ] Add `updatePropertyValue(id, value)` to db.js → UPDATE propertyValues SET value WHERE id
+- [ ] Implement `PUT /api/propertyValues/:id` route
+  - Validate value (not empty, not whitespace only)
+  - Fetch value (return 404 if not found)
+  - Update value text in database
+  - Return updated value object
+- [ ] Test AC22: Edit value → 200, text updated, id unchanged
+- [ ] Test AC23: Edit to duplicate text → 200, duplicate allowed
+- [ ] Test AC24: Edit to empty text → 400, "Value is required", unchanged
 
 ## Phase 2: Frontend Setup
 
 ### Task 2.1: HTML structure
-**Closes:** AC16 (partial)
+**Closes:** AC26 (partial)
 - [ ] Create `src/public/index.html` with Products tab
 - [ ] Add product list container (empty initially)
 - [ ] Add "Add Product" form (name input, button)
@@ -68,13 +91,13 @@ Smallest sensible step at a time, in order. Each task closes one or more ACs.
 - [ ] Verify page loads, no JS errors
 
 ### Task 2.2: Fetch and render products
-**Closes:** AC16, AC17 (UI tests)
+**Closes:** AC26, AC27 (UI tests)
 - [ ] Create `src/public/app.js` with `fetchProducts()` function
 - [ ] Implement product list rendering (name, edit/delete buttons, expand toggle)
 - [ ] Implement property list rendering (nested, ordered, with delete buttons)
-- [ ] Test AC16: Page loads, products displayed with names, buttons, toggles
-- [ ] Test AC16: Empty list → no products shown
-- [ ] Test AC17: Click expand → properties shown with values
+- [ ] Test AC26: Page loads, products displayed with names, buttons, toggles
+- [ ] Test AC26: Empty list → no products shown
+- [ ] Test AC27: Click expand → properties shown with values
 
 ### Task 2.3: Add product form
 **Closes:** AC1, AC2, AC3 (UI tests)
@@ -121,7 +144,7 @@ Smallest sensible step at a time, in order. Each task closes one or more ACs.
 - [x] Test AC11: Delete property → removed from list, others remain
 
 ### Task 2.8: Add/delete property values
-**Closes:** AC12, AC13, AC14, AC15 (UI tests)
+**Closes:** AC12, AC13, AC14, AC15, AC18, AC19 (UI tests)
 - [x] Add "Add Value" button per property
 - [x] Show value form (text input, save button)
 - [x] Call `POST /api/properties/:id/values` on save
@@ -129,7 +152,33 @@ Smallest sensible step at a time, in order. Each task closes one or more ACs.
 - [x] Implement delete button per value → `DELETE /api/propertyValues/:id`
 - [x] Test AC12: Add value → appears in list
 - [x] Test AC14: Add empty value → error displays
-- [x] Test AC15: Delete value → removed from list
+- [x] Test AC15: Add whitespace-only value → error displays
+- [x] Test AC18: Add value with special characters → displays correctly
+- [x] Test AC19: Add value with whitespace → spaces preserved in display
+- [x] Test AC25: Delete value → removed from list
+
+### Task 2.9: Edit property value form
+**Closes:** AC22, AC23, AC24 (UI tests)
+- [ ] Add edit button per value in property list
+- [ ] Add edit modal to index.html (reuse or extend Product Management modal)
+  - Value text input (editable)
+  - "Save" and "Cancel" buttons
+  - Error message container
+- [ ] On edit button click: open modal with current value text
+- [ ] User edits text, clicks "Save" → call `PUT /api/propertyValues/:id`
+- [ ] On success: close modal, refresh value list
+- [ ] On error: show error message "Value is required" and keep modal open
+- [ ] Test AC22: Edit value → list updates immediately
+- [ ] Test AC23: Edit to duplicate text → allowed, no error
+- [ ] Test AC24: Edit to empty text → error displays, value unchanged
+
+### Task 2.10: Property value list display
+**Closes:** AC20, AC21 (UI tests)
+- [ ] Ensure all values display under each property
+- [ ] Order values by creation date
+- [ ] Handle empty state: show "Add Value" form when property has no values
+- [ ] Test AC20: Multiple values display in order with edit/delete buttons
+- [ ] Test AC21: Empty property shows only "Add Value" form
 
 ## Phase 3: Styling & Polish
 
@@ -140,15 +189,33 @@ Smallest sensible step at a time, in order. Each task closes one or more ACs.
 - [x] Style nested properties/values (indentation, margins)
 - [x] Ensure responsive layout (mobile-friendly)
 
+### Task 3.2: CSS for value edit modal
+**Closes:** None (polish)
+- [ ] Style edit modal (align with other modals)
+- [ ] Style value list (clear display with edit/delete buttons side-by-side)
+- [ ] Responsive layout for edit controls
+- [ ] Consistent error message styling
+
+### Task 3.3: UX refinements
+**Closes:** None (polish)
+- [ ] Auto-focus value input when add/edit modal opens
+- [ ] Show success toast after value edit
+- [ ] Disable "Save" button if no changes made in edit modal
+- [ ] Keyboard support: Escape to cancel, Enter to submit
+
 ---
 
 ## Summary
 
-**18 tasks total**
-- **Phase 1 (Backend):** 6 tasks, closes API tests for all ACs except AC7
-- **Phase 2 (Frontend):** 8 tasks, closes UI tests for ACs 1-6, 8-15, 16-17
-- **Phase 3 (Polish):** 1 task, no AC closure
-- **Deferred:** AC7 (delete with orders) — requires Order feature; add integration test then
+**25 tasks total**
+- **Phase 1 (Backend):** 8 tasks, closes API tests for all ACs except AC7
+- **Phase 2 (Frontend):** 9 tasks, closes UI tests for ACs 1-6, 8-15, 18-29
+- **Phase 3 (Polish):** 3 tasks, no AC closure
+- **Deferred:** AC7 (delete with orders), AC16 (add to non-existent property in full flow), AC28-29 (order builder integration) — requires Order feature or scope refinement; add integration tests then
+
+**Completed tasks (from prior work):** 2.4, 2.5, 2.6, 2.7, 2.8, 3.1
 
 **Blocked:**
 - AC7 automated test — needs orderItems table and order records; add after Order Creation feature
+- AC28 (order builder dropdown) — requires Order Creation feature to show value selection UI
+- AC29 (order snapshot) — requires Order Creation feature to store and verify snapshots

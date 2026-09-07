@@ -1,3 +1,7 @@
+⚠️ **DEPRECATED** — This task list has been merged into [TASKS-product-management.md](TASKS-product-management.md). Please refer to that file for the current task breakdown. This file is retained for reference only.
+
+---
+
 # Tasks: Property Value Management
 
 Smallest sensible step at a time, in order. Each task closes one or more ACs.

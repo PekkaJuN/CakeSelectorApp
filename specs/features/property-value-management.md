@@ -1,3 +1,7 @@
+⚠️ **DEPRECATED** — This spec has been merged into [product-management.md](product-management.md). Please refer to that file for the complete and current feature specification. This file is retained for reference only.
+
+---
+
 # Feature: Property Value Management
 
 ## Problem Statement
