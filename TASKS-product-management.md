@@ -115,10 +115,10 @@ Smallest sensible step at a time, in order. Each task closes one or more ACs.
 
 ### Task 2.7: Delete property
 **Closes:** AC11 (UI test)
-- [ ] Implement delete button per property
-- [ ] Call `DELETE /api/properties/:id`
-- [ ] Refresh product details
-- [ ] Test AC11: Delete property → removed from list, others remain
+- [x] Implement delete button per property
+- [x] Call `DELETE /api/properties/:id`
+- [x] Refresh product details
+- [x] Test AC11: Delete property → removed from list, others remain
 
 ### Task 2.8: Add/delete property values
 **Closes:** AC12, AC13, AC14, AC15 (UI tests)

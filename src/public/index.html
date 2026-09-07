@@ -140,6 +140,26 @@
       </div>
     </div>
 
+    <!-- Delete Property Confirmation Modal (hidden by default) -->
+    <div id="delete-property-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Delete Property</h3>
+          <button class="close-btn" onclick="closeDeletePropertyModal()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <p id="delete-property-message"></p>
+          <div id="delete-property-error" class="error-message"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="closeDeletePropertyModal()">Cancel</button>
+          <button id="confirm-delete-property-btn" class="btn-danger">Delete</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Order Edit Modal (hidden by default) -->
     <div id="edit-order-modal" class="modal" style="display: none;">
       <div class="modal-content">

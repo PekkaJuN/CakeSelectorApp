@@ -43,7 +43,7 @@ function renderProductsList(products) {
             ${product.properties.map(prop => `
               <div class="property-item">
                 <span>${escapeHtml(prop.name)}</span>
-                <button class="delete-btn" onclick="deleteProperty('${prop.id}')">Delete</button>
+                <button class="delete-btn" data-property-id="${prop.id}" data-property-name="${escapeHtml(prop.name)}" onclick="openDeletePropertyModal(this)">Delete</button>
                 ${prop.values && prop.values.length > 0 ? `
                   <div class="values-list">
                     ${prop.values.map(v => `
@@ -185,6 +185,9 @@ document.getElementById('property-name').addEventListener('keypress', (e) => {
   }
 });
 
+// Event listener for confirm delete property button
+document.getElementById('confirm-delete-property-btn').addEventListener('click', confirmDeleteProperty);
+
 // Global state for delete confirmation modal
 let deletingProductId = null;
 let deletingProductName = null;
@@ -291,9 +294,50 @@ async function saveProperty() {
   }
 }
 
-// Delete property (placeholder)
-function deleteProperty(propertyId) {
-  alert('Property deletion coming soon');
+// Global state for delete property modal
+let deletingPropertyId = null;
+let deletingPropertyName = null;
+
+// Open delete property confirmation modal
+function openDeletePropertyModal(button) {
+  deletingPropertyId = button.dataset.propertyId;
+  deletingPropertyName = button.dataset.propertyName || '';
+
+  document.getElementById('delete-property-message').textContent =
+    `Are you sure you want to delete the property "${deletingPropertyName}"? This will also delete all its values.`;
+  document.getElementById('delete-property-error').textContent = '';
+  document.getElementById('delete-property-modal').style.display = 'flex';
+}
+
+// Close delete property modal
+function closeDeletePropertyModal() {
+  document.getElementById('delete-property-modal').style.display = 'none';
+  deletingPropertyId = null;
+  deletingPropertyName = null;
+}
+
+// Confirm and delete property
+async function confirmDeleteProperty() {
+  if (!deletingPropertyId) return;
+
+  try {
+    const response = await fetch(`/api/properties/${deletingPropertyId}`, {
+      method: 'DELETE'
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      document.getElementById('delete-property-error').textContent =
+        error.error || 'Failed to delete property';
+      return;
+    }
+
+    closeDeletePropertyModal();
+    await loadProducts();
+  } catch (error) {
+    console.error('Error deleting property:', error);
+    document.getElementById('delete-property-error').textContent = 'Error deleting property';
+  }
 }
 
 // Utility: escape HTML
