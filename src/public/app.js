@@ -33,7 +33,7 @@ function renderProductsList(products) {
       <div class="product-header">
         <span class="product-name">${escapeHtml(product.name)}</span>
         <div class="product-actions">
-          <button class="edit-btn" onclick="editProduct('${product.id}')">Edit</button>
+          <button class="edit-btn" data-product-id="${product.id}" onclick="editProduct(this)">Edit</button>
           <button class="delete-btn" onclick="deleteProduct('${product.id}')">Delete</button>
         </div>
       </div>
@@ -108,13 +108,41 @@ document.getElementById('add-product-btn').addEventListener('click', async () =>
   }
 });
 
-// Edit product
-async function editProduct(productId) {
-  const newName = prompt('Enter new product name:');
-  if (!newName) return;
+// Global state for product edit modal
+let editingProductId = null;
+
+// Edit product - open modal
+function editProduct(button) {
+  const productItem = button.closest('.product-item');
+  const propertiesSection = productItem.querySelector('[id^="properties-"]');
+  const sectionId = propertiesSection?.id;
+  editingProductId = sectionId ? sectionId.replace('properties-', '') : null;
+  const productNameSpan = productItem.querySelector('.product-name');
+  const productName = productNameSpan ? productNameSpan.textContent : '';
+  document.getElementById('edit-product-name').value = productName;
+  document.getElementById('edit-product-error').textContent = '';
+  document.getElementById('edit-product-modal').style.display = 'flex';
+  document.getElementById('edit-product-name').focus();
+}
+
+// Close edit product modal
+function closeEditProductModal() {
+  document.getElementById('edit-product-modal').style.display = 'none';
+  editingProductId = null;
+}
+
+// Save product changes
+async function saveProductChanges() {
+  const newName = document.getElementById('edit-product-name').value.trim();
+  const errorDiv = document.getElementById('edit-product-error');
+
+  if (!newName) {
+    errorDiv.textContent = 'Product name is required';
+    return;
+  }
 
   try {
-    const response = await fetch(`/api/products/${productId}`, {
+    const response = await fetch(`/api/products/${editingProductId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: newName })
@@ -122,16 +150,27 @@ async function editProduct(productId) {
 
     if (!response.ok) {
       const error = await response.json();
-      alert(error.error || 'Failed to update product');
+      errorDiv.textContent = error.error || 'Failed to update product';
       return;
     }
 
+    closeEditProductModal();
     await loadProducts();
   } catch (error) {
     console.error('Error updating product:', error);
-    alert('Error updating product');
+    errorDiv.textContent = 'Error updating product';
   }
 }
+
+// Event listener for save product changes button
+document.getElementById('save-product-changes-btn').addEventListener('click', saveProductChanges);
+
+// Allow Enter key to save product
+document.getElementById('edit-product-name').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    saveProductChanges();
+  }
+});
 
 // Delete product
 async function deleteProduct(productId) {

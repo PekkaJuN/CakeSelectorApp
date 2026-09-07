@@ -88,11 +88,11 @@ Smallest sensible step at a time, in order. Each task closes one or more ACs.
 
 ### Task 2.4: Edit product form
 **Closes:** AC4, AC5 (UI tests)
-- [ ] Implement "Edit" button handler → show edit modal/form
-- [ ] Call `PUT /api/products/:id` on save
-- [ ] Refresh list on success
-- [ ] Display error on failure
-- [ ] Test AC4: Edit product name → list updates, form closes
+- [x] Implement "Edit" button handler → show edit modal/form
+- [x] Call `PUT /api/products/:id` on save
+- [x] Refresh list on success
+- [x] Display error on failure
+- [x] Test AC4: Edit product name → list updates, form closes
 - [ ] Test AC5: Edit to empty name → error displays, product unchanged
 
 ### Task 2.5: Delete product confirmation

@@ -35,6 +35,8 @@ const dbAll = (sql, params = []) => {
   });
 };
 
+export { dbRun, dbGet, dbAll };
+
 // Products
 export const createProduct = (id, name) => {
   return dbRun('INSERT INTO products (id, name) VALUES (?, ?)', [id, name]);
@@ -49,7 +51,7 @@ export const getProduct = (id) => {
 };
 
 export const updateProduct = (id, name) => {
-  return dbRun('UPDATE products SET name = ? WHERE id = ?', [name, id]);
+  return dbRun('UPDATE products SET name = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?', [name, id]);
 };
 
 export const deleteProduct = (id) => {

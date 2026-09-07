@@ -74,6 +74,29 @@
       <p>Order history and management coming soon...</p>
     </div>
 
+    <!-- Edit Product Modal (hidden by default) -->
+    <div id="edit-product-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Edit Product</h3>
+          <button class="close-btn" onclick="closeEditProductModal()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="edit-product-name">Product Name:</label>
+            <input type="text" id="edit-product-name" placeholder="Product name" />
+          </div>
+          <div id="edit-product-error" class="error-message"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="closeEditProductModal()">Cancel</button>
+          <button id="save-product-changes-btn" class="btn-primary">Save</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Order Edit Modal (hidden by default) -->
     <div id="edit-order-modal" class="modal" style="display: none;">
       <div class="modal-content">
