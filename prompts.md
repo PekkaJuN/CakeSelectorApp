@@ -181,4 +181,12 @@
 
 > "Implement Task 2.9"
 
+> "Merge product-management.md and property-value-management.md into single file"
+
+> "Merge TASKS-property-value-management into TASKS-product-management"
+
+> "Merge test-plan-property-value-management into test-plan-product-management"
+
+> "Merge architecture-property-value-management into architecture-product-management"
+
 > "Add missing prompts to prompts.md to phase Merge property-value-management to product-management. Do not add result."
