@@ -55,7 +55,7 @@ function renderProductsList(products) {
             `).join('')}
           </div>
         ` : '<p>No properties yet</p>'}
-        <button class="add-btn" onclick="addProperty('${product.id}')">+ Add Property</button>
+        <button class="add-btn" onclick="openAddPropertyModal(this)">+ Add Property</button>
       </div>
       <button class="toggle-btn" onclick="toggleProperties('${product.id}')">Show Properties</button>
     </div>
@@ -175,6 +175,16 @@ document.getElementById('edit-product-name').addEventListener('keypress', (e) =>
 // Event listener for confirm delete button
 document.getElementById('confirm-delete-btn').addEventListener('click', confirmDeleteProduct);
 
+// Event listener for save property button
+document.getElementById('save-property-btn').addEventListener('click', saveProperty);
+
+// Allow Enter key to save property
+document.getElementById('property-name').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    saveProperty();
+  }
+});
+
 // Global state for delete confirmation modal
 let deletingProductId = null;
 let deletingProductName = null;
@@ -226,9 +236,59 @@ async function confirmDeleteProduct() {
   }
 }
 
-// Add property (placeholder)
-function addProperty(productId) {
-  alert('Property management UI coming soon');
+// Global state for add property modal
+let addingPropertyProductId = null;
+
+// Open add property modal
+function openAddPropertyModal(button) {
+  const productItem = button.closest('.product-item');
+  const propertiesSection = productItem.querySelector('[id^="properties-"]');
+  const sectionId = propertiesSection?.id;
+  addingPropertyProductId = sectionId ? sectionId.replace('properties-', '') : null;
+
+  document.getElementById('property-name').value = '';
+  document.getElementById('add-property-error').textContent = '';
+  document.getElementById('add-property-modal').style.display = 'flex';
+  document.getElementById('property-name').focus();
+}
+
+// Close add property modal
+function closeAddPropertyModal() {
+  document.getElementById('add-property-modal').style.display = 'none';
+  addingPropertyProductId = null;
+}
+
+// Save property
+async function saveProperty() {
+  const propertyName = document.getElementById('property-name').value.trim();
+  const errorDiv = document.getElementById('add-property-error');
+
+  if (!propertyName) {
+    errorDiv.textContent = 'Property name is required';
+    return;
+  }
+
+  if (!addingPropertyProductId) return;
+
+  try {
+    const response = await fetch(`/api/products/${addingPropertyProductId}/properties`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: propertyName })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      errorDiv.textContent = error.error || 'Failed to add property';
+      return;
+    }
+
+    closeAddPropertyModal();
+    await loadProducts();
+  } catch (error) {
+    console.error('Error adding property:', error);
+    errorDiv.textContent = 'Error adding property';
+  }
 }
 
 // Delete property (placeholder)

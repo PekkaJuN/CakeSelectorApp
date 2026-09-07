@@ -117,6 +117,29 @@
       </div>
     </div>
 
+    <!-- Add Property Modal (hidden by default) -->
+    <div id="add-property-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Add Property</h3>
+          <button class="close-btn" onclick="closeAddPropertyModal()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="property-name">Property Name:</label>
+            <input type="text" id="property-name" placeholder="e.g., Size, Flavor, Coating" />
+          </div>
+          <div id="add-property-error" class="error-message"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="closeAddPropertyModal()">Cancel</button>
+          <button id="save-property-btn" class="btn-primary">Add</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Order Edit Modal (hidden by default) -->
     <div id="edit-order-modal" class="modal" style="display: none;">
       <div class="modal-content">

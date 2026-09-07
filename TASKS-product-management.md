@@ -105,13 +105,13 @@ Smallest sensible step at a time, in order. Each task closes one or more ACs.
 
 ### Task 2.6: Add property form
 **Closes:** AC8, AC9, AC10 (UI tests)
-- [ ] Add "Add Property" button to each product (inside expand section)
-- [ ] Show property form (name input, save button)
-- [ ] Call `POST /api/products/:id/properties` on save
-- [ ] Refresh product details
-- [ ] Display error on failure
-- [ ] Test AC8: Add property → appears under product
-- [ ] Test AC10: Add empty property → error displays
+- [x] Add "Add Property" button to each product (inside expand section)
+- [x] Show property form (name input, save button)
+- [x] Call `POST /api/products/:id/properties` on save
+- [x] Refresh product details
+- [x] Display error on failure
+- [x] Test AC8: Add property → appears under product
+- [x] Test AC10: Add empty property → error displays
 
 ### Task 2.7: Delete property
 **Closes:** AC11 (UI test)
