@@ -138,3 +138,21 @@
 > "Order History with own files"
 
 > "Update prompts.md with missing prompts to following Phase 5 · Feature specs. Add only missing prompts, not result. Keep earlier prompts"
+
+---
+
+## Phase 7: Implementation - TDD Workflow (2026-09-07)
+
+> "fix the AC4 product edit modal. Replace prompt() with a proper modal dialog"
+
+> "Start Task 2.5: delete product confirmation modal."
+
+> "Start Task 2.6: Add Property Form"
+
+> "Start Task 2.7: Delete Property"
+
+> "Start Task 2.8: Add/Delete Property Values"
+
+> "Start Task 3.1: CSS for Products tab"
+
+> "Add my today's prompts to prompts.md. Do not add result."
