@@ -1,3 +1,7 @@
+⚠️ **DEPRECATED** — This test plan has been merged into [test-plan-product-management.md](test-plan-product-management.md). Please refer to that file for the current comprehensive test coverage. This file is retained for reference only.
+
+---
+
 # Test Plan: Property Value Management
 
 ## AC to Test Mapping

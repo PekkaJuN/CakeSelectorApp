@@ -237,6 +237,7 @@ Products are displayed as an expandable list. Each product shows its name, edit/
 | POST /api/properties/:id/values (UI) | add value error | property "Base" form is visible | leave field blank, click "Add Value" | error "Value is required" appears, form retains focus, no value added |
 | POST /api/properties/:id/values (UI) | add value with special chars | property form visible | enter "dark & bitter", click "Add Value" | value appears in list as "dark & bitter", form clears |
 | PUT /api/propertyValues/:id (UI) | edit value | property "Base" has value "dark" | click "Edit" on "dark", change to "dark chocolate", click "Save" | value in list updates to "dark chocolate", database updated |
+| PUT /api/propertyValues/:id (UI) | edit to duplicate text | property "Base" has values ["light", "dark"] | click "Edit" on "dark", change to "light" (duplicate of existing value), click "Save" | value updates to "light", property now has two "light" entries, no error |
 | PUT /api/propertyValues/:id (UI) | edit value error | value "dark" is being edited | clear field and click "Save" | error "Value is required" appears, value remains "dark" |
 | GET /api/properties/:id/values (UI) | values in dropdown | product "Cake" has property "Base" with values ["light", "dark"] | user opens order builder for product | "Base" dropdown shows ["light", "dark"] as selectable options |
 | Order snapshot | value preservation | order created with selection base="light" | value text is later edited to "light deluxe" | order still displays "light" (original snapshot at time of order) |

@@ -203,6 +203,29 @@
       </div>
     </div>
 
+    <!-- Edit Property Value Modal (hidden by default) -->
+    <div id="edit-value-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Edit Value</h3>
+          <button class="close-btn" onclick="closeEditPropertyValueModal()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="edit-value-text">Value:</label>
+            <input type="text" id="edit-value-text" placeholder="e.g., Small, Medium, Large" />
+          </div>
+          <div id="edit-value-error" class="error-message"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="closeEditPropertyValueModal()">Cancel</button>
+          <button id="save-value-changes-btn" class="btn-primary">Save</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Order Edit Modal (hidden by default) -->
     <div id="edit-order-modal" class="modal" style="display: none;">
       <div class="modal-content">

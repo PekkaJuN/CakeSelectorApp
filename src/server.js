@@ -64,6 +64,30 @@ app.post('/api/properties/:id/values', async (req, res) => {
   }
 });
 
+// PUT /api/propertyValues/:id - Edit property value
+app.put('/api/propertyValues/:id', async (req, res) => {
+  const { id } = req.params;
+  const { value } = req.body;
+
+  if (!value || value.trim() === '') {
+    return res.status(400).json({ error: 'Value is required' });
+  }
+
+  try {
+    const propValue = await db.getPropertyValue(id);
+    if (!propValue) {
+      return res.status(404).json({ error: 'Value not found' });
+    }
+
+    await db.updatePropertyValue(id, value);
+    const updated = await db.getPropertyValue(id);
+    res.json(updated);
+  } catch (error) {
+    console.error('Error updating property value:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // DELETE /api/propertyValues/:id - Delete property value
 app.delete('/api/propertyValues/:id', async (req, res) => {
   const { id } = req.params;

@@ -1,3 +1,7 @@
+⚠️ **DEPRECATED** — This architecture document has been merged into [architecture-product-management.md](architecture-product-management.md). Please refer to that file for the current architecture. This file is retained for reference only.
+
+---
+
 # Architecture: Property Value Management
 
 ## Project Structure

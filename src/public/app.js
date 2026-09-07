@@ -49,6 +49,7 @@ function renderProductsList(products) {
                     ${prop.values.map(v => `
                       <div class="value-item">
                         <span>${escapeHtml(v.value)}</span>
+                        <button class="edit-btn" data-value-id="${v.id}" data-value-text="${escapeHtml(v.value)}" onclick="openEditPropertyValueModal(this)">Edit</button>
                         <button class="delete-btn" data-value-id="${v.id}" onclick="openDeletePropertyValueModal(this)">Delete</button>
                       </div>
                     `).join('')}
@@ -203,6 +204,16 @@ document.getElementById('value-text').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     e.preventDefault();
     savePropertyValue();
+  }
+});
+
+// Event listener for save property value changes button
+document.getElementById('save-value-changes-btn').addEventListener('click', savePropertyValueChanges);
+
+// Allow Enter key to save property value changes
+document.getElementById('edit-value-text').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    savePropertyValueChanges();
   }
 });
 
@@ -453,6 +464,59 @@ async function confirmDeletePropertyValue() {
   } catch (error) {
     console.error('Error deleting value:', error);
     document.getElementById('delete-value-error').textContent = 'Error deleting value';
+  }
+}
+
+// Global state for edit property value modal
+let editingPropertyValueId = null;
+
+// Open edit property value modal
+function openEditPropertyValueModal(button) {
+  editingPropertyValueId = button.dataset.valueId;
+  const valueText = button.dataset.valueText || '';
+
+  document.getElementById('edit-value-text').value = valueText;
+  document.getElementById('edit-value-error').textContent = '';
+  document.getElementById('edit-value-modal').style.display = 'flex';
+  document.getElementById('edit-value-text').focus();
+}
+
+// Close edit property value modal
+function closeEditPropertyValueModal() {
+  document.getElementById('edit-value-modal').style.display = 'none';
+  editingPropertyValueId = null;
+}
+
+// Save property value changes
+async function savePropertyValueChanges() {
+  const newValue = document.getElementById('edit-value-text').value.trim();
+  const errorDiv = document.getElementById('edit-value-error');
+
+  if (!newValue) {
+    errorDiv.textContent = 'Value is required';
+    return;
+  }
+
+  if (!editingPropertyValueId) return;
+
+  try {
+    const response = await fetch(`/api/propertyValues/${editingPropertyValueId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value: newValue })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      errorDiv.textContent = error.error || 'Failed to update value';
+      return;
+    }
+
+    closeEditPropertyValueModal();
+    await loadProducts();
+  } catch (error) {
+    console.error('Error updating value:', error);
+    errorDiv.textContent = 'Error updating value';
   }
 }
 
