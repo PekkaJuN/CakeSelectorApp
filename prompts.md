@@ -156,3 +156,29 @@
 > "Start Task 3.1: CSS for Products tab"
 
 > "Add my today's prompts to prompts.md. Do not add result."
+
+---
+
+## Phase 8: Document Consolidation & Task Implementation (2026-09-07 continued)
+
+> "Read product-management.md and property-value-management.md. Are every feature of property-value-management included in product-management?"
+
+> "Is better to keep separate files?"
+
+> "Merge them"
+
+> "Should TASKS-property-value-management be merged into TASKS-product-management too?"
+
+> "Merge them"
+
+> "Should architecture-property-value-management be merged to architecture-product-management?"
+
+> "Merge them"
+
+> "Should test-plan-property-value-management be merged to test-plan-product-management too?"
+
+> "Merge them"
+
+> "Implement Task 2.9"
+
+> "Add missing prompts to prompts.md to phase Merge property-value-management to product-management. Do not add result."
