@@ -125,10 +125,31 @@ router.delete('/properties/:id', async (req, res) => {
       return res.status(404).json({ error: 'Property not found' });
     }
 
+    // Delete all values for this property first
+    await db.dbRun('DELETE FROM propertyValues WHERE propertyId = ?', [id]);
+    // Then delete the property
     await db.deleteProperty(id);
     res.json({ deleted: id });
   } catch (error) {
     console.error('Error deleting property:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/properties/:id/values - List all values for a property
+router.get('/properties/:id/values', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const property = await db.getProperty(id);
+    if (!property) {
+      return res.status(404).json({ error: 'Property not found' });
+    }
+
+    const values = await db.getPropertyValues(id);
+    res.json(values);
+  } catch (error) {
+    console.error('Error fetching property values:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

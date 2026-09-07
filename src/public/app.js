@@ -55,7 +55,7 @@ function renderProductsList(products) {
                     `).join('')}
                   </div>
                   <button class="add-btn" onclick="openAddPropertyValueModal('${prop.id}')">+ Add Value</button>
-                ` : '<p>No values yet</p><button class="add-btn" onclick="openAddPropertyValueModal(\'${prop.id}\')">+ Add Value</button>'}
+                ` : `<p>No values yet</p><button class="add-btn" onclick="openAddPropertyValueModal('${prop.id}')">+ Add Value</button>`}
               </div>
             `).join('')}
           </div>
