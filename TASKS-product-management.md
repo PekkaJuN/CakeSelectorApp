@@ -122,14 +122,14 @@ Smallest sensible step at a time, in order. Each task closes one or more ACs.
 
 ### Task 2.8: Add/delete property values
 **Closes:** AC12, AC13, AC14, AC15 (UI tests)
-- [ ] Add "Add Value" button per property
-- [ ] Show value form (text input, save button)
-- [ ] Call `POST /api/properties/:id/values` on save
-- [ ] Display values as list under property
-- [ ] Implement delete button per value → `DELETE /api/propertyValues/:id`
-- [ ] Test AC12: Add value → appears in list
-- [ ] Test AC14: Add empty value → error displays
-- [ ] Test AC15: Delete value → removed from list
+- [x] Add "Add Value" button per property
+- [x] Show value form (text input, save button)
+- [x] Call `POST /api/properties/:id/values` on save
+- [x] Display values as list under property
+- [x] Implement delete button per value → `DELETE /api/propertyValues/:id`
+- [x] Test AC12: Add value → appears in list
+- [x] Test AC14: Add empty value → error displays
+- [x] Test AC15: Delete value → removed from list
 
 ## Phase 3: Styling & Polish
 

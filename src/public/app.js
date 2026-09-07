@@ -47,10 +47,14 @@ function renderProductsList(products) {
                 ${prop.values && prop.values.length > 0 ? `
                   <div class="values-list">
                     ${prop.values.map(v => `
-                      <div class="value-item">${escapeHtml(v.value)}</div>
+                      <div class="value-item">
+                        <span>${escapeHtml(v.value)}</span>
+                        <button class="delete-btn" data-value-id="${v.id}" onclick="openDeletePropertyValueModal(this)">Delete</button>
+                      </div>
                     `).join('')}
                   </div>
-                ` : '<p>No values yet</p>'}
+                  <button class="add-btn" onclick="openAddPropertyValueModal('${prop.id}')">+ Add Value</button>
+                ` : '<p>No values yet</p><button class="add-btn" onclick="openAddPropertyValueModal(\'${prop.id}\')">+ Add Value</button>'}
               </div>
             `).join('')}
           </div>
@@ -187,6 +191,20 @@ document.getElementById('property-name').addEventListener('keypress', (e) => {
 
 // Event listener for confirm delete property button
 document.getElementById('confirm-delete-property-btn').addEventListener('click', confirmDeleteProperty);
+
+// Event listener for save property value button
+document.getElementById('save-value-btn').addEventListener('click', savePropertyValue);
+
+// Event listener for confirm delete property value button
+document.getElementById('confirm-delete-value-btn').addEventListener('click', confirmDeletePropertyValue);
+
+// Event listener for enter key on value text input
+document.getElementById('value-text').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    savePropertyValue();
+  }
+});
 
 // Global state for delete confirmation modal
 let deletingProductId = null;
@@ -337,6 +355,104 @@ async function confirmDeleteProperty() {
   } catch (error) {
     console.error('Error deleting property:', error);
     document.getElementById('delete-property-error').textContent = 'Error deleting property';
+  }
+}
+
+// Global state for add property value modal
+let addingPropertyValuePropertyId = null;
+
+// Open add property value modal
+function openAddPropertyValueModal(propertyId) {
+  addingPropertyValuePropertyId = propertyId;
+  document.getElementById('value-text').value = '';
+  document.getElementById('add-value-error').textContent = '';
+  document.getElementById('add-value-modal').style.display = 'flex';
+  document.getElementById('value-text').focus();
+}
+
+// Close add property value modal
+function closeAddPropertyValueModal() {
+  document.getElementById('add-value-modal').style.display = 'none';
+  addingPropertyValuePropertyId = null;
+}
+
+// Save property value
+async function savePropertyValue() {
+  const valueText = document.getElementById('value-text').value.trim();
+  const errorDiv = document.getElementById('add-value-error');
+
+  if (!valueText) {
+    errorDiv.textContent = 'Value is required';
+    return;
+  }
+
+  if (!addingPropertyValuePropertyId) return;
+
+  try {
+    const response = await fetch(`/api/properties/${addingPropertyValuePropertyId}/values`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value: valueText })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      errorDiv.textContent = error.error || 'Failed to add value';
+      return;
+    }
+
+    closeAddPropertyValueModal();
+    await loadProducts();
+  } catch (error) {
+    console.error('Error adding value:', error);
+    errorDiv.textContent = 'Error adding value';
+  }
+}
+
+// Global state for delete property value modal
+let deletingPropertyValueId = null;
+let deletingPropertyValueText = null;
+
+// Open delete property value modal
+function openDeletePropertyValueModal(button) {
+  deletingPropertyValueId = button.dataset.valueId;
+  const valueSpan = button.previousElementSibling;
+  deletingPropertyValueText = valueSpan ? valueSpan.textContent : '';
+
+  document.getElementById('delete-value-message').textContent =
+    `Are you sure you want to delete the value "${deletingPropertyValueText}"?`;
+  document.getElementById('delete-value-error').textContent = '';
+  document.getElementById('delete-value-modal').style.display = 'flex';
+}
+
+// Close delete property value modal
+function closeDeletePropertyValueModal() {
+  document.getElementById('delete-value-modal').style.display = 'none';
+  deletingPropertyValueId = null;
+  deletingPropertyValueText = null;
+}
+
+// Confirm and delete property value
+async function confirmDeletePropertyValue() {
+  if (!deletingPropertyValueId) return;
+
+  try {
+    const response = await fetch(`/api/propertyValues/${deletingPropertyValueId}`, {
+      method: 'DELETE'
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      document.getElementById('delete-value-error').textContent =
+        error.error || 'Failed to delete value';
+      return;
+    }
+
+    closeDeletePropertyValueModal();
+    await loadProducts();
+  } catch (error) {
+    console.error('Error deleting value:', error);
+    document.getElementById('delete-value-error').textContent = 'Error deleting value';
   }
 }
 

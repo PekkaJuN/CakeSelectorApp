@@ -134,7 +134,7 @@ router.delete('/properties/:id', async (req, res) => {
 });
 
 // POST /api/properties/:id/values - Add value to property
-router.post('/values/:id', async (req, res) => {
+router.post('/properties/:id/values', async (req, res) => {
   const { id } = req.params;
   const { value } = req.body;
 

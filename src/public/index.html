@@ -160,6 +160,49 @@
       </div>
     </div>
 
+    <!-- Add Property Value Modal (hidden by default) -->
+    <div id="add-value-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Add Value</h3>
+          <button class="close-btn" onclick="closeAddPropertyValueModal()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="value-text">Value:</label>
+            <input type="text" id="value-text" placeholder="e.g., Small, Medium, Large" />
+          </div>
+          <div id="add-value-error" class="error-message"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="closeAddPropertyValueModal()">Cancel</button>
+          <button id="save-value-btn" class="btn-primary">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Property Value Confirmation Modal (hidden by default) -->
+    <div id="delete-value-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Delete Value</h3>
+          <button class="close-btn" onclick="closeDeletePropertyValueModal()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <p id="delete-value-message"></p>
+          <div id="delete-value-error" class="error-message"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="closeDeletePropertyValueModal()">Cancel</button>
+          <button id="confirm-delete-value-btn" class="btn-danger">Delete</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Order Edit Modal (hidden by default) -->
     <div id="edit-order-modal" class="modal" style="display: none;">
       <div class="modal-content">
