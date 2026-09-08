@@ -197,3 +197,31 @@ Order editing preserves the original createdAt timestamp and updates only the mo
   - Data persistence tests: snapshots, timestamps, concurrent writes
   - UI tests: modal display, item listing, button interactions
   - Concurrent edit and data refresh scenarios tested
+
+## AC Implementation Status
+
+| AC | Title | Backend | Frontend | Status |
+|----|-------|---------|----------|--------|
+| AC1 | View order details | ✅ DONE | ✅ DONE | ✅ COMPLETE |
+| AC2 | Edit customer name | ✅ DONE | ✅ DONE | ✅ COMPLETE |
+| AC3 | Edit customer name to empty | ✅ DONE | ✅ DONE | ✅ COMPLETE |
+| AC4 | Edit customer name to whitespace | ✅ DONE | ✅ DONE | ✅ COMPLETE |
+| AC5 | Add item to order | ✅ DONE | ✅ DONE | ✅ COMPLETE |
+| AC6 | Add item with incomplete properties | ✅ DONE | ✅ DONE | ✅ COMPLETE |
+| AC7 | Remove item from order | ✅ DONE | ✅ DONE | ✅ COMPLETE |
+| AC8 | Remove last item validation | ✅ DONE | ✅ DONE | ✅ COMPLETE |
+| AC9 | Save order changes | ✅ DONE | ✅ DONE | ✅ COMPLETE |
+| AC10 | Cancel without saving | ✅ DONE | ✅ DONE | ✅ COMPLETE |
+| AC11 | Preserve createdAt timestamp | ✅ DONE | ✅ DONE | ✅ COMPLETE |
+| AC12 | Preserve product snapshots | ✅ DONE | ✅ DONE | ✅ COMPLETE |
+| AC13 | New item snapshot at edit time | ✅ DONE | ✅ DONE | ✅ COMPLETE |
+| AC14 | Special characters in name | ✅ DONE | ✅ DONE | ✅ COMPLETE |
+| AC15 | Modal displays current items clearly | ✅ DONE | ✅ DONE | ✅ COMPLETE |
+| AC16 | Add multiple items in one session | ✅ DONE | ✅ DONE | ✅ COMPLETE |
+| AC17 | Edit order with no prior edits | ✅ DONE | ✅ DONE | ✅ COMPLETE |
+| AC18 | Concurrent edits - last write wins | ✅ DONE | ⏸️ DEFERRED | ⏸️ DEFERRED |
+| AC19 | Viewing stale order version | ✅ DONE | ⏸️ DEFERRED | ⏸️ DEFERRED |
+| AC20 | Remove and re-add item | ✅ DONE | ✅ DONE | ✅ COMPLETE |
+
+**Summary:** 18/20 ACs complete (AC18, AC19 deferred for v2 - manual testing only)
+**All 27 backend tests passing** — Coverage verified
