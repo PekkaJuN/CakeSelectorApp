@@ -297,6 +297,11 @@
 ### Task Planning & Workflow
 
 > "Read TASKS-order-editing.md and specs/features/order-editing.md.
+## Phase 10: Order History Implementation (2026-09-08)
+
+### Task Planning & Workflow
+
+> "Read TASKS-order-history.md and specs/features/order-history.md.
 > 
 > Which task is next? Restate it in one line, name the AC it
 > serves, and name the test that will prove it (from the testing
@@ -311,6 +316,7 @@
 
 > "Run the `tdd` workflow from @AGENTS.md for AC«N» in
 > specs/features/order-editing.md.
+> specs/features/order-history.md.
 > 
 > RED first: write the failing test for this AC only. The test
 > name states the AC. Run it and paste the real output. Confirm
@@ -337,6 +343,25 @@
 > and the outputs. List every difference from the AC.
 > 
 > Do not fix anything yet."
+### Frontend Development
+
+> "Start implementing the Order History tab UI (Task 2.1)"
+
+> "implement Task 2.2: Fetch and display orders"
+
+> "implement Task 2.3: Edit and delete functionality"
+
+> "implement Task 2.4: Refresh on changes"
+
+### User Testing & Verification
+
+> "Start the app and test the Order History tab as a user would.
+> 
+> Click through the Order History tab: view the list, click an order
+> to see details, test the delete flow, test search/filter.
+> 
+> Report exactly what you did and what you saw. List every difference
+> from the AC."
 
 ### Code Review & Validation
 
@@ -384,3 +409,21 @@
 ### Prompts Documentation
 
 > "Add prompts to prompts.md to phase Order edition implementation. Do not add result."
+### Verification & Sign-Off
+
+> "Before I sign this off:
+> 1. Make the smallest possible wrong change to the code that
+> tests/routes/order-history.test.js covers. Run the test. It MUST fail
+> — if it passes, say so and state what the test actually asserts.
+> Restore the code.
+> 2. Mark the task done in TASKS-order-history.md and the AC status in the spec.
+> 3. Commit with a message that names the AC.
+> 4. Show me what is next in TASKS-order-history.md."
+
+### Phase 3: CSS Polish
+
+> "Start Phase 3 CSS polish."
+
+### Prompts Documentation
+
+> "Add prompts to prompts.md to phase Order history implementation. Do not add result."

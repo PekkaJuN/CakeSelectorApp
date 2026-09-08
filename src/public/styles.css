@@ -563,6 +563,126 @@ button {
   min-height: 50px;
 }
 
+/* Order History */
+.search-section {
+  margin-bottom: 25px;
+  position: relative;
+}
+
+.search-section input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 1em;
+  transition: all 0.3s ease;
+  background-color: white;
+}
+
+.search-section input::placeholder {
+  color: #bbb;
+}
+
+.search-section input:focus {
+  outline: none;
+  border-color: #333;
+  box-shadow: 0 0 0 3px rgba(51,51,51,0.08);
+  background-color: white;
+}
+
+.orders-list {
+  margin-top: 25px;
+}
+
+.orders-list > p.empty-state {
+  color: #999;
+  font-style: italic;
+  padding: 40px 30px;
+  text-align: center;
+  background-color: #fafafa;
+  border: 2px dashed #ddd;
+  border-radius: 6px;
+  font-size: 1em;
+}
+
+.order-item {
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  padding: 18px;
+  margin-bottom: 15px;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.order-item:hover {
+  background-color: #fafafa;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-color: #d0d0d0;
+  transform: translateY(-2px);
+}
+
+.order-item:active {
+  transform: translateY(0);
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.customer-name {
+  font-weight: 600;
+  font-size: 1.15em;
+  color: #222;
+  letter-spacing: -0.3px;
+}
+
+.item-count {
+  background: linear-gradient(135deg, #333 0%, #555 100%);
+  color: white;
+  border-radius: 14px;
+  padding: 4px 12px;
+  font-size: 0.8em;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(51,51,51,0.2);
+}
+
+.order-date {
+  font-size: 0.9em;
+  color: #888;
+  font-weight: 400;
+}
+
+.order-item-display {
+  padding: 14px;
+  background-color: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 5px;
+  margin-bottom: 12px;
+  font-size: 0.95em;
+  line-height: 1.5;
+}
+
+.order-item-display:last-child {
+  margin-bottom: 0;
+}
+
+.order-item-display strong {
+  color: #222;
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 1.05em;
+}
+
+.order-item-display + .order-item-display {
+  margin-top: 10px;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   .container {

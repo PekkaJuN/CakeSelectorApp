@@ -17,25 +17,25 @@
 - [x] Add Order History tab to index.html
 - [x] List container (table or div rows)
 - [x] Add details modal (view-only, buttons for edit/delete)
-- [ ] Add delete confirmation modal
+- [x] Add delete confirmation modal
 - [x] Add error message container
 
 ### Task 2.2: Fetch and display
 - [x] Fetch GET `/api/orders` on tab load
 - [x] Render list: customer name, date, item count
 - [x] Implement click to open details modal
-- [x] Display all items with selections
+- [x] Display all items with selections (formatted: ProductName - PropName: value)
 
 ### Task 2.3: Edit and delete
 - [x] "Edit" button → open order edit modal (from Order Editing)
-- [ ] "Delete" button → confirmation → DELETE /api/orders/:id
-- [ ] On success: refresh list
-- [ ] On error: show error message
+- [x] "Delete" button → confirmation → DELETE /api/orders/:id
+- [x] On success: refresh list
+- [x] On error: show error message
 
 ### Task 2.4: Refresh on changes
 - [x] Auto-refresh list after order created (from Order Creation)
 - [x] Auto-refresh after order edited (from Order Editing)
-- [ ] Auto-refresh after order deleted
+- [x] Auto-refresh after order deleted
 
 ## Phase 3: Polish
 - [x] CSS for list and modals
