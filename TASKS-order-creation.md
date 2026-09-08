@@ -155,24 +155,24 @@ Smallest sensible step at a time, in order. Each task closes one or more ACs.
 
 ### Task 3.1: CSS for Order Builder tab
 **Closes:** None (UI polish)
-- [ ] Style customer name input
-- [ ] Style product/property/value dropdowns
-- [ ] Style "Add Item" button
-- [ ] Style cart preview (items list, edit/remove buttons)
-- [ ] Style error messages (red, clear visibility)
-- [ ] Style modal for editing items
-- [ ] Ensure responsive layout (mobile-friendly)
-- [ ] Test AC2: Multiple items displayed clearly
-- [ ] Test AC6/AC7: Buttons functional and visible
+- [x] Style customer name input
+- [x] Style product/property/value dropdowns
+- [x] Style "Add Item" button
+- [x] Style cart preview (items list, edit/remove buttons)
+- [x] Style error messages (red, clear visibility)
+- [x] Style modal for editing items
+- [x] Ensure responsive layout (mobile-friendly)
+- [x] Test AC2: Multiple items displayed clearly
+- [x] Test AC6/AC7: Buttons functional and visible
 
 ### Task 3.2: UX refinements
 **Closes:** None (polish)
-- [ ] Auto-focus customer name input on tab load
-- [ ] Disable "Save Order" button if cart empty
-- [ ] Show item count in cart preview
-- [ ] Confirm before "Clear Cart"
-- [ ] Show success toast/message after save
-- [ ] Smooth transitions between steps
+- [x] Auto-focus customer name input on tab load
+- [x] Disable "Save Order" button if cart empty
+- [x] Show item count in cart preview
+- [x] Confirm before "Clear Cart"
+- [x] Show success toast/message after save
+- [x] Smooth transitions between steps
 
 ---
 
