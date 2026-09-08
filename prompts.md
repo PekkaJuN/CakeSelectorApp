@@ -190,3 +190,33 @@
 > "Merge architecture-property-value-management into architecture-product-management"
 
 > "Add missing prompts to prompts.md to phase Merge property-value-management to product-management. Do not add result."
+
+---
+
+## Phase 9: Order Creation Implementation (2026-09-08)
+
+### Backend & Database Verification
+
+> "Run the `tdd` workflow from @AGENTS.md for AC1 in specs/features/order-creation.md.
+>
+> Before I sign this off:
+> 1. Make the smallest possible wrong change to the code that tests/«file» covers. Run the test. It MUST fail — if it passes, say so and state what the test actually asserts. Restore the code: git diff --quiet — «file»
+> 2. Mark the task done in TASKS-order-creation.md and the AC status in the spec.
+> 3. Commit with a message that names the AC.
+> 4. Show me what is next in TASKS-order-creation.md."
+
+> "quickly mark completed backend tasks as done"
+
+### Frontend Development
+
+> "implement Task 2.1"
+
+> "implement Task 2.2"
+
+### Phase 2 Complete & Phase 3 Start
+
+> "implement Phase 3"
+
+### Prompts Documentation
+
+> "Add prompts to prompts.md to phase Order creation implementation. Do not add result."
