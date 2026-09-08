@@ -195,6 +195,75 @@
 
 ## Phase 9: Order Creation Implementation (2026-09-08)
 
+### Task Planning & Workflow
+
+> "Read TASKS-order-creation.md and specs/features/order-creation.md.
+> 
+> Which task is next? Restate it in one line, name the AC it
+> serves, and name the test that will prove it (from the testing
+> strategy).
+> 
+> If it is a new feature with no spec yet, stop: it goes through
+> the spec workflow first.
+> 
+> Do not write code or tests yet."
+
+### TDD Red-Green-Refactor Cycle
+
+> "Run the `tdd` workflow from @AGENTS.md for AC«N» in
+> specs/features/order-creation.md.
+> 
+> RED first: write the failing test for this AC only. The test
+> name states the AC. Run it and paste the real output. Confirm
+> it fails because the behaviour is missing — not because of an
+> import, path or fixture.
+> 
+> Only then GREEN: the smallest change that passes it. Run ALL
+> tests and show the summary.
+> 
+> Then REFACTOR with the tests green.
+> 
+> Stop after this AC. Do not start the next one."
+
+### User Testing & Verification
+
+> "Start the app (the command is in @AGENTS.md) and try AC«N»
+> as a user would.
+> 
+> If you have a browser tool, open the app in it and walk
+> through the AC: click, type, read the screen, take a
+> screenshot. If this is a CLI, run it with real input.
+> 
+> Report exactly what you did and what you saw — the inputs
+> and the outputs. List every difference from the AC.
+> 
+> Do not fix anything yet."
+
+### Code Review & Validation
+
+> "Run all tests and show the summary.
+> 
+> Then run the `review` workflow from @AGENTS.md on the changes
+> since the last commit: for each change, which AC it serves;
+> what changed that no AC asked for; which test proves what.
+> 
+> Also audit: input validation, error paths, and everything the
+> spec named under Risk.
+> 
+> End with APPROVED or CHANGES_REQUIRED and a numbered list of
+> what must change."
+
+### Fix & Iterate
+
+> "Fix the CHANGES_REQUIRED items from the review, one at a
+> time, each through the `tdd` workflow — red first.
+> 
+> Then run all tests and the `review` workflow again.
+> 
+> Stop when the verdict is APPROVED, or after two rounds without
+> progress — then tell me what is stuck instead of trying a
+> third time."
+
 ### Backend & Database Verification
 
 > "Run the `tdd` workflow from @AGENTS.md for AC1 in specs/features/order-creation.md.
