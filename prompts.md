@@ -427,3 +427,19 @@
 ### Prompts Documentation
 
 > "Add prompts to prompts.md to phase Order history implementation. Do not add result."
+
+---
+
+## Phase 11: Bug Fixes (2026-09-08)
+
+### Property Value Display Fix
+
+> "Guid is shown value of property in Edit order page, not correct value"
+
+### Verification
+
+> "Is ok with specs that value of order id is UUID in order history page"
+
+### Prompts Documentation
+
+> "Add missing prompts to prompts.md to phase bug fixes. Do not add result."
