@@ -948,17 +948,32 @@ async function openOrderEditModal(orderId) {
       selections: item.selections
     }));
 
-    // Fetch products
+    // Fetch products with properties and values
     const productsResponse = await fetch('/api/products');
     if (!productsResponse.ok) {
       throw new Error('Failed to load products');
     }
     const products = await productsResponse.json();
 
-    // Fetch product names for display in cart
+    // Create maps for product/property/value names
     const productMap = Object.fromEntries(products.map(p => [p.id, p.name]));
+    const propertyMap = {}; // propId -> propName
+    const valueMap = {}; // valueId -> valueName
+
+    products.forEach(product => {
+      (product.properties || []).forEach(prop => {
+        propertyMap[prop.id] = prop.name;
+        (prop.values || []).forEach(val => {
+          valueMap[val.id] = val.value;
+        });
+      });
+    });
+
+    // Populate product names and add value mappings
     editCart.forEach(item => {
       item.productName = productMap[item.productId] || `Product ${item.productId}`;
+      item.propertyMap = propertyMap;
+      item.valueMap = valueMap;
     });
 
     updateEditCartDisplay();
@@ -1111,10 +1126,16 @@ function updateEditCartDisplay() {
         <strong>${escapeHtml(item.productName)}</strong>
         <div class="item-selections">
           ${Object.entries(item.selections).map(([propId, valueId]) => {
-            const select = document.querySelector(`select[data-property-id="${propId}"]`);
-            const option = select?.querySelector(`option[value="${valueId}"]`);
-            const valueName = option?.textContent || valueId;
-            const propName = select?.dataset.propertyName || propId;
+            // Try to get from item's maps first, then fall back to selecting from DOM
+            let propName = item.propertyMap?.[propId];
+            let valueName = item.valueMap?.[valueId];
+
+            if (!propName || !valueName) {
+              const select = document.querySelector(`select[data-property-id="${propId}"]`);
+              const option = select?.querySelector(`option[value="${valueId}"]`);
+              propName = propName || select?.dataset.propertyName || propId;
+              valueName = valueName || option?.textContent || valueId;
+            }
             return `<span>${propName}: ${escapeHtml(valueName)}</span>`;
           }).join(' | ')}
         </div>
