@@ -913,3 +913,148 @@ test('AC10 variant: POST /api/orders | missing items field | Save order without 
     server.close();
   }
 });
+
+// AC11 Test: Save order with whitespace-only customer name
+// Given: customer name field contains "   " (spaces only) and cart has 1 item
+// When: user clicks "Save Order"
+// Then: no order saved; error "Customer name is required"
+
+test('AC11: POST /api/orders | whitespace-only name | Save order with whitespace-only customer name', async () => {
+  const app = express();
+  app.use(express.json());
+  app.use('/api/orders', ordersRouter);
+
+  // Setup: clean database
+  await db.dbRun('DELETE FROM orderItems');
+  await db.dbRun('DELETE FROM orders');
+  await db.dbRun('DELETE FROM propertyValues');
+  await db.dbRun('DELETE FROM properties');
+  await db.dbRun('DELETE FROM products');
+
+  // Given: product with properties
+  const productId = 'cake1';
+  await db.createProduct(productId, 'Chocolate Cake');
+
+  const basePropId = 'prop1';
+  await db.createProperty(basePropId, productId, 'Base');
+  const baseVal1 = uuidv4();
+  await db.createPropertyValue(baseVal1, basePropId, 'light');
+
+  const orderCountBefore = (await db.getAllOrders()).length;
+
+  const server = app.listen(0);
+  const { port } = server.address();
+  const baseUrl = `http://localhost:${port}`;
+
+  try {
+    // When: customer name contains only spaces "   " and cart has 1 item
+    const response = await fetch(`${baseUrl}/api/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customerName: '   ',
+        items: [{
+          productId: productId,
+          selections: {
+            [basePropId]: 'light'
+          }
+        }]
+      })
+    });
+
+    const data = await response.json();
+
+    // Then: status 400
+    assert.strictEqual(response.status, 400, `expected status 400, got ${response.status}`);
+
+    // Error message "Customer name is required"
+    assert.strictEqual(data.error, 'Customer name is required', `expected error message, got: ${data.error}`);
+
+    // No order saved
+    const orderCountAfter = (await db.getAllOrders()).length;
+    assert.strictEqual(orderCountAfter, orderCountBefore, 'no order should be created');
+    assert.strictEqual(orderCountAfter, 0, 'database should still have 0 orders');
+  } finally {
+    server.close();
+  }
+});
+
+// AC20 Test: Save order with special characters in customer name
+// Given: customer name field contains "Jean-Luc O'Brien & Co."
+// When: user creates an order with this name
+// Then: order saved with customerName "Jean-Luc O'Brien & Co."; special characters preserved
+
+test('AC20: POST /api/orders | special characters | Save order with special characters in customer name', async () => {
+  const app = express();
+  app.use(express.json());
+  app.use('/api/orders', ordersRouter);
+
+  // Setup: clean database
+  await db.dbRun('DELETE FROM orderItems');
+  await db.dbRun('DELETE FROM orders');
+  await db.dbRun('DELETE FROM propertyValues');
+  await db.dbRun('DELETE FROM properties');
+  await db.dbRun('DELETE FROM products');
+
+  // Given: product with properties
+  const productId = 'cake1';
+  await db.createProduct(productId, 'Chocolate Cake');
+
+  const basePropId = 'prop1';
+  await db.createProperty(basePropId, productId, 'Base');
+  const baseVal1 = uuidv4();
+  await db.createPropertyValue(baseVal1, basePropId, 'light');
+
+  const server = app.listen(0);
+  const { port } = server.address();
+  const baseUrl = `http://localhost:${port}`;
+
+  try {
+    // When: customer name contains special characters "Jean-Luc O'Brien & Co."
+    const specialName = "Jean-Luc O'Brien & Co.";
+    const response = await fetch(`${baseUrl}/api/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customerName: specialName,
+        items: [{
+          productId: productId,
+          selections: {
+            [basePropId]: 'light'
+          }
+        }]
+      })
+    });
+
+    const data = await response.json();
+
+    // Then: status 201
+    assert.strictEqual(response.status, 201, `expected status 201, got ${response.status}`);
+
+    // Response contains exact customer name with special characters
+    assert.strictEqual(data.customerName, specialName, `expected customerName "${specialName}", got "${data.customerName}"`);
+
+    // Special characters are preserved (not escaped or truncated)
+    assert(data.customerName.includes("Jean-Luc"), 'name should contain "Jean-Luc"');
+    assert(data.customerName.includes("O'Brien"), 'name should contain "O\'Brien" with apostrophe');
+    assert(data.customerName.includes("&"), 'name should contain "&"');
+    assert(data.customerName.includes("Co."), 'name should contain "Co."');
+
+    // Order persisted in database with special characters intact
+    const savedOrder = await db.getOrder(data.id);
+    assert(savedOrder, 'order should be saved in database');
+    assert.strictEqual(savedOrder.customerName, specialName, `saved customerName should be "${specialName}", got "${savedOrder.customerName}"`);
+
+    // Verify order appears in list with special characters
+    const listResponse = await fetch(`${baseUrl}/api/orders`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const ordersList = await listResponse.json();
+
+    assert.strictEqual(ordersList.length, 1, 'order list should have 1 order');
+    assert.strictEqual(ordersList[0].customerName, specialName, `order in list should have customerName "${specialName}"`);
+  } finally {
+    server.close();
+  }
+});
