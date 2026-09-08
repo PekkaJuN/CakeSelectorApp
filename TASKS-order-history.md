@@ -3,13 +3,13 @@
 ## Phase 1: Backend
 
 ### Task 1.1: Database functions
-- [ ] Add `getAllOrders()` → SELECT all orders, ordered by createdAt DESC
-- [ ] Add `deleteOrder(id)` → DELETE order + cascade items
+- [x] Add `getAllOrders()` → SELECT all orders, ordered by createdAt DESC
+- [x] Add `deleteOrder(id)` → DELETE order + cascade items
 
 ### Task 1.2: API endpoints
-- [ ] Implement GET `/api/orders` → return all orders with itemCount
-- [ ] Implement DELETE `/api/orders/:id` → delete order, return {deleted: id}
-- [ ] Test: list all, empty list, delete, not found
+- [x] Implement GET `/api/orders` → return all orders with itemCount
+- [x] Implement DELETE `/api/orders/:id` → delete order, return {deleted: id}
+- [x] Test: list all, empty list, delete, not found
 
 ## Phase 2: Frontend
 
