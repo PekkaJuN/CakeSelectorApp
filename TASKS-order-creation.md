@@ -109,36 +109,36 @@ Smallest sensible step at a time, in order. Each task closes one or more ACs.
 
 ### Task 2.3: Add item to cart
 **Closes:** AC1, AC4, AC5 (UI tests)
-- [ ] Implement "Add Item" button handler
-- [ ] Validate: product selected (AC5)
-- [ ] Validate: all properties selected (AC4)
-- [ ] If valid: add item to in-memory cart array
-- [ ] Refresh cart preview
-- [ ] Clear form/dropdowns
-- [ ] Test AC1: Add valid item → appears in cart
-- [ ] Test AC4: Add with incomplete properties → error "All properties must be selected"
-- [ ] Test AC5: Add without product → error "Product is required"
+- [x] Implement "Add Item" button handler
+- [x] Validate: product selected (AC5)
+- [x] Validate: all properties selected (AC4)
+- [x] If valid: add item to in-memory cart array
+- [x] Refresh cart preview
+- [x] Clear form/dropdowns
+- [x] Test AC1: Add valid item → appears in cart
+- [x] Test AC4: Add with incomplete properties → error "All properties must be selected"
+- [x] Test AC5: Add without product → error "Product is required"
 
 ### Task 2.4: Cart management
 **Closes:** AC6, AC7, AC17
-- [ ] Implement "Edit" button per item → open edit modal with current selections
-- [ ] Allow changing property selections in modal
-- [ ] Validate: all properties still required (AC19)
-- [ ] Save edited item → update cart array
-- [ ] Implement "Remove" button per item → delete from cart
-- [ ] Implement "Clear Cart" button → empty cart, clear customer name
-- [ ] Test AC6: Remove item → cart updates, count decreases
-- [ ] Test AC7: Edit item selections → updates in cart
-- [ ] Test AC17: Clear cart → all items removed, form clears
+- [x] Implement "Edit" button per item → open edit modal with current selections
+- [x] Allow changing property selections in modal
+- [x] Validate: all properties still required (AC19)
+- [x] Save edited item → update cart array
+- [x] Implement "Remove" button per item → delete from cart
+- [x] Implement "Clear Cart" button → empty cart, clear customer name
+- [x] Test AC6: Remove item → cart updates, count decreases
+- [x] Test AC7: Edit item selections → updates in cart
+- [x] Test AC17: Clear cart → all items removed, form clears
 
 ### Task 2.5: Save order
 **Closes:** AC8, AC9, AC10, AC11, AC18, AC20 (UI tests)
-- [ ] Implement "Save Order" button handler
-- [ ] Validate customer name (not empty, not whitespace)
-- [ ] Validate cart not empty
-- [ ] Call `POST /api/orders` with customerName + items
-- [ ] On success: show confirmation (order id, timestamp), clear form
-- [ ] On error: display error message from server
+- [x] Implement "Save Order" button handler
+- [x] Validate customer name (not empty, not whitespace)
+- [x] Validate cart not empty
+- [x] Call `POST /api/orders` with customerName + items
+- [x] On success: show confirmation (order id, timestamp), clear form
+- [x] On error: display error message from server
 - [ ] Test AC8: Save valid order → saved successfully, form clears
 - [ ] Test AC9: Save without customer name → error "Customer name is required"
 - [ ] Test AC10: Save empty cart → error "Order must contain at least one item"
@@ -146,10 +146,10 @@ Smallest sensible step at a time, in order. Each task closes one or more ACs.
 
 ### Task 2.6: Cart preview styling
 **Closes:** AC13 (UI test)
-- [ ] Display each item clearly: "Product Name - Property1: value1, Property2: value2"
-- [ ] Show all selected properties for each item
-- [ ] Add edit/remove buttons per item
-- [ ] Test AC13: Cart shows all property selections for each item
+- [x] Display each item clearly: "Product Name - Property1: value1, Property2: value2"
+- [x] Show all selected properties for each item
+- [x] Add edit/remove buttons per item
+- [x] Test AC13: Cart shows all property selections for each item
 
 ## Phase 3: Styling & Polish
 
