@@ -17,6 +17,24 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/products', productsRouter);
 app.use('/api/orders', ordersRouter);
 
+// GET /api/properties/:id/values - List all values for a property
+app.get('/api/properties/:id/values', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const property = await db.getProperty(id);
+    if (!property) {
+      return res.status(404).json({ error: 'Property not found' });
+    }
+
+    const values = await db.getPropertyValues(id);
+    res.json(values);
+  } catch (error) {
+    console.error('Error fetching property values:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // DELETE /api/properties/:id - Delete property and all its values
 app.delete('/api/properties/:id', async (req, res) => {
   const { id } = req.params;

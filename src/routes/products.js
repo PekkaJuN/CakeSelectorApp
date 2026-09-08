@@ -89,6 +89,24 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// GET /api/products/:id/properties - List properties for a product
+router.get('/:id/properties', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const product = await db.getProduct(id);
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    const properties = await db.getPropertiesForProduct(id);
+    res.json(properties);
+  } catch (error) {
+    console.error('Error fetching product properties:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // POST /api/products/:id/properties - Add property to product
 router.post('/:id/properties', async (req, res) => {
   const { id } = req.params;
