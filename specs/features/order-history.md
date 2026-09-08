@@ -185,3 +185,31 @@ The Order History tab is a read-only view by default; clicking buttons transitio
   - Concurrent scenario tests: delete from multiple tabs
 
 **Spec is ready for implementation.**
+
+## AC Implementation Status
+
+| AC | Title | Status |
+|----|-------|--------|
+| AC1 | Display order list | ✅ COMPLETE |
+| AC2 | Order with no items (edge case) | ✅ COMPLETE |
+| AC3 | Order list is empty | ✅ COMPLETE |
+| AC4 | Click order to view details | ✅ COMPLETE |
+| AC5 | Order details display all item properties | ✅ COMPLETE |
+| AC6 | Close order details without edit | ✅ COMPLETE |
+| AC7 | Delete order (placeholder) | ✅ COMPLETE |
+| AC8 | Delete order | ⏸️ DEFERRED |
+| AC9 | Delete order with confirmation | ⏸️ DEFERRED |
+| AC10 | Cancel order deletion | ⏸️ DEFERRED |
+| AC11 | Order list updates after creation | ✅ COMPLETE |
+| AC12 | Order list updates after edit | ✅ COMPLETE |
+| AC13 | Order list updates after deletion | ⏸️ DEFERRED |
+| AC14 | Display creation date formatted | ✅ COMPLETE |
+| AC15 | Search orders by customer name | ⏸️ DEFERRED |
+| AC16 | Filter orders by customer name | ⏸️ DEFERRED |
+| AC17 | Clear search filter | ⏸️ DEFERRED |
+| AC18 | Item count displays correctly | ✅ COMPLETE |
+| AC19 | Shows updated timestamp if edited | ✅ COMPLETE |
+| AC20 | Delete button with auth (future) | ⏸️ DEFERRED |
+
+**Summary:** 11/20 ACs complete; 9/20 deferred (delete functionality, search/filter, auth)
+**Backend API endpoints:** GET /api/orders (implemented), DELETE /api/orders/:id (implemented)
