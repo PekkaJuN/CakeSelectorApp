@@ -725,6 +725,165 @@ document.getElementById('save-order-btn').addEventListener('click', async () => 
   }
 });
 
+// Update cart display in Order Builder
+function updateCartDisplay() {
+  const cartDiv = document.getElementById('cart-items');
+  const saveBtn = document.getElementById('save-order-btn');
+  const clearBtn = document.getElementById('clear-cart-btn');
+
+  if (cart.length === 0) {
+    cartDiv.innerHTML = '<p>No items in cart.</p>';
+    saveBtn.disabled = true;
+    clearBtn.disabled = true;
+    return;
+  }
+
+  cartDiv.innerHTML = cart.map((item, index) => `
+    <div class="cart-item">
+      <div class="item-details">
+        <strong>${escapeHtml(item.productName)}</strong>
+        <div class="item-selections">
+          ${Object.entries(item.selections).map(([propId, valueId]) => {
+            const select = document.querySelector(`#properties-container select[data-property-id="${propId}"]`);
+            const option = select?.querySelector(`option[value="${valueId}"]`);
+            const valueName = option?.textContent || valueId;
+            const propName = select?.dataset.propertyName || propId;
+            return `<span>${propName}: ${escapeHtml(valueName)}</span>`;
+          }).join(' | ')}
+        </div>
+      </div>
+      <div class="item-actions">
+        <button class="edit-btn" onclick="editCartItem(${index})">Edit</button>
+        <button class="delete-btn" onclick="removeCartItem(${index})">Remove</button>
+      </div>
+    </div>
+  `).join('');
+
+  saveBtn.disabled = false;
+  clearBtn.disabled = false;
+}
+
+// Remove item from cart
+function removeCartItem(index) {
+  cart.splice(index, 1);
+  updateCartDisplay();
+}
+
+// Global state for item editing
+let editingCartItemIndex = null;
+
+// Edit item in cart
+async function editCartItem(index) {
+  const item = cart[index];
+  editingCartItemIndex = index;
+
+  try {
+    // Get product details to show property dropdowns
+    const productResponse = await fetch(`/api/products/${item.productId}/properties`);
+    if (!productResponse.ok) throw new Error('Failed to fetch properties');
+    const properties = await productResponse.json();
+
+    // Show product name
+    document.getElementById('edit-item-product-name').textContent = item.productName;
+
+    // Create property dropdowns
+    const container = document.getElementById('edit-item-properties-container');
+    container.innerHTML = '';
+
+    for (const property of properties) {
+      const group = document.createElement('div');
+      group.className = 'form-group';
+
+      const label = document.createElement('label');
+      label.textContent = property.name + ':';
+      label.htmlFor = `edit-item-prop-${property.id}`;
+
+      const select = document.createElement('select');
+      select.id = `edit-item-prop-${property.id}`;
+      select.dataset.propertyId = property.id;
+      select.dataset.propertyName = property.name;
+
+      const defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      defaultOption.textContent = `-- Select ${property.name} --`;
+      select.appendChild(defaultOption);
+
+      // Fetch and populate values
+      const valuesResponse = await fetch(`/api/properties/${property.id}/values`);
+      if (valuesResponse.ok) {
+        const values = await valuesResponse.json();
+        values.forEach(v => {
+          const option = document.createElement('option');
+          option.value = v.id;
+          option.textContent = v.value;
+          if (item.selections[property.id] === v.id) {
+            option.selected = true;
+          }
+          select.appendChild(option);
+        });
+      }
+
+      group.appendChild(label);
+      group.appendChild(select);
+      container.appendChild(group);
+    }
+
+    document.getElementById('edit-item-error').textContent = '';
+    document.getElementById('edit-item-modal').style.display = 'flex';
+  } catch (error) {
+    console.error('Error opening edit item modal:', error);
+    document.getElementById('edit-item-error').textContent = 'Error loading item details';
+  }
+}
+
+// Close edit item modal
+function closeEditItemModal() {
+  document.getElementById('edit-item-modal').style.display = 'none';
+  editingCartItemIndex = null;
+}
+
+// Save item changes
+document.getElementById('save-item-changes-btn').addEventListener('click', () => {
+  const errorDiv = document.getElementById('edit-item-error');
+  errorDiv.textContent = '';
+
+  if (editingCartItemIndex === null) return;
+
+  // Get new selections
+  const propertySelects = document.querySelectorAll('#edit-item-properties-container select');
+  const selections = {};
+  let isValid = true;
+
+  propertySelects.forEach(select => {
+    const propertyId = select.dataset.propertyId;
+    const value = select.value;
+
+    if (!value) {
+      isValid = false;
+      errorDiv.textContent = `All properties must be selected for ${cart[editingCartItemIndex].productName}`;
+    }
+
+    selections[propertyId] = value;
+  });
+
+  if (!isValid) return;
+
+  // Update item in cart
+  cart[editingCartItemIndex].selections = selections;
+  updateCartDisplay();
+  closeEditItemModal();
+});
+
+// Clear cart button handler
+document.getElementById('clear-cart-btn').addEventListener('click', () => {
+  if (confirm('Are you sure you want to clear the cart? This cannot be undone.')) {
+    cart = [];
+    document.getElementById('customer-name').value = '';
+    document.getElementById('order-error').textContent = '';
+    updateCartDisplay();
+  }
+});
+
 // UUID generator (simple)
 function uuidv4() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
