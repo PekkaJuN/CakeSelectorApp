@@ -929,6 +929,17 @@ async function openOrderEditModal(orderId) {
     // Populate customer name
     document.getElementById('edit-customer-name').value = order.customerName;
 
+    // Display creation date (read-only)
+    const createdDate = new Date(order.createdAt);
+    const formattedDate = createdDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    document.getElementById('edit-order-created-date').textContent = formattedDate;
+
     // Populate current items
     editCart = (order.items || []).map(item => ({
       id: item.id, // Keep existing id
@@ -937,30 +948,30 @@ async function openOrderEditModal(orderId) {
       selections: item.selections
     }));
 
-    // Fetch product names for display
+    // Fetch products
     const productsResponse = await fetch('/api/products');
-    if (productsResponse.ok) {
-      const products = await productsResponse.json();
-      const productMap = Object.fromEntries(products.map(p => [p.id, p.name]));
-      editCart.forEach(item => {
-        item.productName = productMap[item.productId] || `Product ${item.productId}`;
-      });
+    if (!productsResponse.ok) {
+      throw new Error('Failed to load products');
     }
+    const products = await productsResponse.json();
+
+    // Fetch product names for display in cart
+    const productMap = Object.fromEntries(products.map(p => [p.id, p.name]));
+    editCart.forEach(item => {
+      item.productName = productMap[item.productId] || `Product ${item.productId}`;
+    });
 
     updateEditCartDisplay();
 
     // Populate product dropdown
     const editProductSelect = document.getElementById('edit-product-select');
     editProductSelect.innerHTML = '<option value="">-- Select a product --</option>';
-    if (productsResponse.ok) {
-      const products = await productsResponse.json();
-      products.forEach(product => {
-        const option = document.createElement('option');
-        option.value = product.id;
-        option.textContent = product.name;
-        editProductSelect.appendChild(option);
-      });
-    }
+    products.forEach(product => {
+      const option = document.createElement('option');
+      option.value = product.id;
+      option.textContent = product.name;
+      editProductSelect.appendChild(option);
+    });
 
     // Setup product selection handler
     editProductSelect.onchange = handleEditProductSelect;
@@ -1145,6 +1156,7 @@ document.getElementById('save-order-changes-btn').addEventListener('click', asyn
     const updateData = {
       customerName,
       items: editCart.map(item => ({
+        id: item.id,
         productId: item.productId,
         selections: item.selections
       }))
@@ -1164,8 +1176,69 @@ document.getElementById('save-order-changes-btn').addEventListener('click', asyn
 
     alert('Order updated successfully!');
     closeOrderEditModal();
+    // Refresh order history after saving
+    loadOrderHistory();
   } catch (error) {
     console.error('Error saving order:', error);
     errorDiv.textContent = 'Error saving order';
   }
+});
+
+// Order History
+async function loadOrderHistory() {
+  const ordersList = document.getElementById('orders-list');
+  const errorDiv = document.getElementById('order-history-error');
+
+  errorDiv.textContent = '';
+
+  try {
+    const response = await fetch('/api/orders');
+    if (!response.ok) throw new Error('Failed to fetch orders');
+
+    const orders = await response.json();
+
+    if (orders.length === 0) {
+      ordersList.innerHTML = '<p>No orders yet.</p>';
+      return;
+    }
+
+    ordersList.innerHTML = orders.map(order => {
+      const createdDate = new Date(order.createdAt);
+      const formattedDate = createdDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      return `
+        <div class="order-card">
+          <div class="order-header">
+            <strong>${escapeHtml(order.customerName)}</strong>
+            <span class="order-date">${formattedDate}</span>
+          </div>
+          <div class="order-details">
+            <span class="order-id">Order ID: ${order.id}</span>
+            <span class="item-count">${order.itemCount || 0} item${(order.itemCount || 0) !== 1 ? 's' : ''}</span>
+          </div>
+          <div class="order-actions">
+            <button class="btn-secondary" onclick="openOrderEditModal('${order.id}')">Edit</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (error) {
+    console.error('Error loading order history:', error);
+    errorDiv.textContent = 'Error loading order history';
+  }
+}
+
+// Load order history when Order History tab is clicked
+document.querySelectorAll('.tab-button').forEach(button => {
+  button.addEventListener('click', (e) => {
+    if (e.target.dataset.tab === 'order-history') {
+      loadOrderHistory();
+    }
+  });
 });
