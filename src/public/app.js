@@ -543,6 +543,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initOrderBuilder() {
+  // Auto-focus customer name input
+  const customerNameInput = document.getElementById('customer-name');
+  if (customerNameInput) {
+    customerNameInput.focus();
+  }
+
   // Populate product dropdown
   try {
     const response = await fetch('/api/products');
@@ -730,6 +736,15 @@ function updateCartDisplay() {
   const cartDiv = document.getElementById('cart-items');
   const saveBtn = document.getElementById('save-order-btn');
   const clearBtn = document.getElementById('clear-cart-btn');
+  const cartSection = document.querySelector('.cart-section h3');
+
+  // Update item count badge
+  if (cartSection) {
+    const countBadge = cartSection.querySelector('.cart-item-count');
+    if (countBadge) {
+      countBadge.textContent = `${cart.length} item${cart.length !== 1 ? 's' : ''}`;
+    }
+  }
 
   if (cart.length === 0) {
     cartDiv.innerHTML = '<p>No items in cart.</p>';
