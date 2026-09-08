@@ -154,24 +154,6 @@ router.delete('/properties/:id', async (req, res) => {
   }
 });
 
-// GET /api/properties/:id/values - List all values for a property
-router.get('/properties/:id/values', async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const property = await db.getProperty(id);
-    if (!property) {
-      return res.status(404).json({ error: 'Property not found' });
-    }
-
-    const values = await db.getPropertyValues(id);
-    res.json(values);
-  } catch (error) {
-    console.error('Error fetching property values:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
 // POST /api/properties/:id/values - Add value to property
 router.post('/properties/:id/values', async (req, res) => {
   const { id } = req.params;
