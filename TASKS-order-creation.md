@@ -73,16 +73,27 @@ Smallest sensible step at a time, in order. Each task closes one or more ACs.
 
 ### Task 2.1: Order Builder tab HTML
 **Closes:** None (foundation)
-- [ ] Add "Order Builder" tab to index.html (next to Products tab)
-- [ ] Add customer name input field
-- [ ] Add product selector (dropdown)
-- [ ] Add property selector area (will be dynamic)
-- [ ] Add "Add Item" button
-- [ ] Add cart preview area (list of items)
-- [ ] Add "Clear Cart" button
-- [ ] Add "Save Order" button
-- [ ] Add error message container
-- [ ] Verify HTML loads, tab switches
+- [x] Add "Order Builder" tab to index.html (next to Products tab)
+- [x] Add customer name input field
+- [x] Add product selector (dropdown)
+- [x] Add property selector area (will be dynamic)
+- [x] Add "Add Item" button
+- [x] Add cart preview area (list of items)
+- [x] Add "Clear Cart" button
+- [x] Add "Save Order" button
+- [x] Add error message container
+- [x] Verify HTML loads, tab switches
+
+### Task 2.1b: Order Builder JavaScript (implemented with Task 2.1)
+**Closes:** None (foundation + basic cart management)
+- [x] Implement updateCartDisplay() function for cart rendering
+- [x] Implement removeCartItem(index) function
+- [x] Implement editCartItem(index) function with modal
+- [x] Implement closeEditItemModal() function
+- [x] Implement save item changes handler
+- [x] Implement Clear Cart button handler with confirmation
+- [x] Add Edit Item modal to HTML
+- [x] Enable/disable buttons based on cart state
 
 ### Task 2.2: Fetch dropdown data
 **Closes:** AC14, AC15, AC16 (UI tests)
