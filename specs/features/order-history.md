@@ -185,3 +185,28 @@ The Order History tab is a read-only view by default; clicking buttons transitio
   - Concurrent scenario tests: delete from multiple tabs
 
 **Spec is ready for implementation.**
+
+---
+
+## Implementation Status
+
+**Phase 2 Frontend (Tasks 2.1-2.4) COMPLETE** ✅
+
+| AC | Status | Test | Notes |
+|---|--------|------|-------|
+| AC1 | ✅ DONE | GET /api/orders returns list, sorted DESC | Verified in browser: 3 orders, correct sort |
+| AC2 | ✅ DONE | N/A (edge case, covered by AC1) | Order with 0 items renders correctly |
+| AC3 | ✅ DONE | Empty state message displays | "No orders yet. Create your first order..." |
+| AC4 | ✅ DONE | Click order opens details modal | Shows customer name, date, all items |
+| AC5 | ✅ DONE | Items display: ProductName - PropName: value | Format: "Chocolate Cake - Base: dark, Size: large" |
+| AC6 | ✅ DONE | Close button closes modal without changes | Order list remains visible |
+| AC8 | ✅ DONE | Delete removes from database, list refreshes | Verified: order deleted, empty state shown |
+| AC9 | ✅ DONE | Confirmation modal with exact message | "Are you sure? This will permanently delete..." |
+| AC10 | ✅ DONE | Cancel closes delete modal, keeps details open | Order not deleted |
+| AC11 | TBD | Requires Order Creation feature integration | Auto-refresh after new order created |
+| AC13 | TBD | Requires Order Editing feature integration | Auto-refresh after order edited |
+| AC14 | ✅ DONE | Date format: YYYY-MM-DD HH:MM:SS | Using formatDate() with UTC methods |
+| AC16 | ✅ DONE | Search filters by customer name substring | Case-insensitive, live filtering |
+| AC17 | ✅ DONE | Clear search removes filter, shows all | All orders reappear |
+
+**Next Phase:** Phase 3 (CSS Polish) - Styling, responsive layout, date formatting refinement

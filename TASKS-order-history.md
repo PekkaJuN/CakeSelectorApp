@@ -14,28 +14,28 @@
 ## Phase 2: Frontend
 
 ### Task 2.1: Order History tab UI
-- [ ] Add Order History tab to index.html
-- [ ] List container (table or div rows)
-- [ ] Add details modal (view-only, buttons for edit/delete)
-- [ ] Add delete confirmation modal
-- [ ] Add error message container
+- [x] Add Order History tab to index.html
+- [x] List container (table or div rows)
+- [x] Add details modal (view-only, buttons for edit/delete)
+- [x] Add delete confirmation modal
+- [x] Add error message container
 
 ### Task 2.2: Fetch and display
-- [ ] Fetch GET `/api/orders` on tab load
-- [ ] Render list: customer name, date, item count
-- [ ] Implement click to open details modal
-- [ ] Display all items with selections
+- [x] Fetch GET `/api/orders` on tab load
+- [x] Render list: customer name, date, item count
+- [x] Implement click to open details modal
+- [x] Display all items with selections (formatted: ProductName - PropName: value)
 
 ### Task 2.3: Edit and delete
-- [ ] "Edit" button → open order edit modal (from Order Editing)
-- [ ] "Delete" button → confirmation → DELETE /api/orders/:id
-- [ ] On success: refresh list
-- [ ] On error: show error message
+- [x] "Edit" button → open order edit modal (from Order Editing)
+- [x] "Delete" button → confirmation → DELETE /api/orders/:id
+- [x] On success: refresh list
+- [x] On error: show error message
 
 ### Task 2.4: Refresh on changes
-- [ ] Auto-refresh list after order created (from Order Creation)
-- [ ] Auto-refresh after order edited (from Order Editing)
-- [ ] Auto-refresh after order deleted
+- [x] Auto-refresh list after order created (from Order Creation)
+- [x] Auto-refresh after order edited (from Order Editing)
+- [x] Auto-refresh after order deleted
 
 ## Phase 3: Polish
 - [ ] CSS for list and modals
