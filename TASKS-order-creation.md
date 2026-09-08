@@ -97,15 +97,15 @@ Smallest sensible step at a time, in order. Each task closes one or more ACs.
 
 ### Task 2.2: Fetch dropdown data
 **Closes:** AC14, AC15, AC16 (UI tests)
-- [ ] On Order Builder tab load: fetch `/api/products`
-- [ ] Populate product dropdown
-- [ ] When product selected: fetch `/api/products/:id/properties`
-- [ ] Dynamically create property dropdowns
-- [ ] When property selected: fetch `/api/properties/:id/values`
-- [ ] Populate value dropdowns
-- [ ] Test AC14: Page loads, product dropdown shows all products
-- [ ] Test AC15: Select product, property dropdowns appear
-- [ ] Test AC16: Select property, value dropdown shows all values
+- [x] On Order Builder tab load: fetch `/api/products`
+- [x] Populate product dropdown
+- [x] When product selected: fetch `/api/products/:id/properties`
+- [x] Dynamically create property dropdowns
+- [x] When property selected: fetch `/api/properties/:id/values`
+- [x] Populate value dropdowns
+- [x] Test AC14: Page loads, product dropdown shows all products
+- [x] Test AC15: Select product, property dropdowns appear
+- [x] Test AC16: Select property, value dropdown shows all values
 
 ### Task 2.3: Add item to cart
 **Closes:** AC1, AC4, AC5 (UI tests)
