@@ -6,11 +6,11 @@ Smallest sensible step at a time, in order. Each task closes one or more ACs.
 
 ### Task 1.1: Extend db.js with order functions
 **Closes:** None (foundation)
-- [ ] Add `createOrder(id, customerName)` → insert into orders table
-- [ ] Add `createOrderItem(id, orderId, productId, selections)` → insert into orderItems table
-- [ ] Add `getOrder(id)` → retrieve order by id (with items)
-- [ ] Add `getOrdersForCustomer(customerName)` → (future; not needed for v1)
-- [ ] Verify functions work with test data
+- [x] Add `createOrder(id, customerName)` → insert into orders table
+- [x] Add `createOrderItem(id, orderId, productId, selections)` → insert into orderItems table
+- [x] Add `getOrder(id)` → retrieve order by id (with items)
+- [x] Add `getOrdersForCustomer(customerName)` → (future; not needed for v1)
+- [x] Verify functions work with test data
 
 ### Task 1.2: Create order API endpoint
 **Closes:** AC1, AC2, AC3, AC8
@@ -27,47 +27,47 @@ Smallest sensible step at a time, in order. Each task closes one or more ACs.
 
 ### Task 1.3: Validate order creation errors
 **Closes:** AC9, AC10, AC11
-- [ ] Test AC9: Empty customer name → 400, "Customer name is required"
-- [ ] Test AC9: Whitespace customer name → 400, "Customer name is required"
-- [ ] Test AC9: Missing customerName field → 400, "Customer name is required"
-- [ ] Test AC10: Empty items array → 400, "Order must contain at least one item"
-- [ ] Test AC10: Missing items field → 400, "Order must contain at least one item"
-- [ ] Test AC11: Whitespace-only name → 400, "Customer name is required"
+- [x] Test AC9: Empty customer name → 400, "Customer name is required"
+- [x] Test AC9: Whitespace customer name → 400, "Customer name is required"
+- [x] Test AC9: Missing customerName field → 400, "Customer name is required"
+- [x] Test AC10: Empty items array → 400, "Order must contain at least one item"
+- [x] Test AC10: Missing items field → 400, "Order must contain at least one item"
+- [x] Test AC11: Whitespace-only name → 400, "Customer name is required"
 
 ### Task 1.4: Validate item property selections
 **Closes:** AC4, AC5, AC19
-- [ ] Test AC4: Item with incomplete properties → 400, "All properties must be selected for [product]"
-- [ ] Test AC4: Item missing property from required set → 400 error
-- [ ] Test AC5: Item without productId → 400, "Product id is required for each item"
-- [ ] Test AC5: Missing productId field → 400 error
-- [ ] Test AC19: Item with incomplete selections on edit → 400, "All properties must be selected"
+- [x] Test AC4: Item with incomplete properties → 400, "All properties must be selected for [product]"
+- [x] Test AC4: Item missing property from required set → 400 error
+- [x] Test AC5: Item without productId → 400, "Product id is required for each item"
+- [x] Test AC5: Missing productId field → 400 error
+- [x] Test AC19: Item with incomplete selections on edit → 400, "All properties must be selected"
 
 ### Task 1.5: Product catalog API (read-only)
 **Closes:** AC14, AC15, AC16
-- [ ] Ensure GET `/api/products` returns all products with properties and values (already implemented)
-- [ ] Ensure GET `/api/products/:id/properties` returns properties for product (already implemented)
-- [ ] Ensure GET `/api/properties/:id/values` returns values for property (already implemented)
-- [ ] Test AC14: GET /api/products → exactly configured products in response
-- [ ] Test AC15: GET /api/products/:id → only that product's properties
-- [ ] Test AC16: GET /api/properties/:id/values → all values for property
+- [x] Ensure GET `/api/products` returns all products with properties and values (already implemented)
+- [x] Ensure GET `/api/products/:id/properties` returns properties for product (already implemented)
+- [x] Ensure GET `/api/properties/:id/values` returns values for property (already implemented)
+- [x] Test AC14: GET /api/products → exactly configured products in response
+- [x] Test AC15: GET /api/products/:id → only that product's properties
+- [x] Test AC16: GET /api/properties/:id/values → all values for property
 
 ### Task 1.6: Special character handling
 **Closes:** AC20
-- [ ] Test AC20: Save order with customer name "Jean-Luc O'Brien & Co." → name preserved in database
-- [ ] Verify special chars not escaped/truncated
+- [x] Test AC20: Save order with customer name "Jean-Luc O'Brien & Co." → name preserved in database
+- [x] Verify special chars not escaped/truncated
 
 ### Task 1.7: Timestamp verification
 **Closes:** AC18
-- [ ] Test AC18: POST order → createdAt timestamp within 1 second of current time
-- [ ] Verify ISO 8601 format
-- [ ] Verify timestamp stored correctly in database
+- [x] Test AC18: POST order → createdAt timestamp within 1 second of current time
+- [x] Verify ISO 8601 format
+- [x] Verify timestamp stored correctly in database
 
 ### Task 1.8: Order retrieval
 **Closes:** AC13, AC12 (partial)
-- [ ] Implement `GET /api/orders/:id` route
-- [ ] Return full order with all items and selections
-- [ ] Test AC13: GET /api/orders/:id → response includes all property selections
-- [ ] Test AC12: Create order, verify product snapshot stored with item
+- [x] Implement `GET /api/orders/:id` route
+- [x] Return full order with all items and selections
+- [x] Test AC13: GET /api/orders/:id → response includes all property selections
+- [x] Test AC12: Create order, verify product snapshot stored with item
 
 ## Phase 2: Frontend Setup
 
