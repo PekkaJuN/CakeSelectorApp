@@ -674,62 +674,6 @@ document.getElementById('add-item-btn').addEventListener('click', () => {
   document.getElementById('properties-container').innerHTML = '';
 });
 
-function updateCartDisplay() {
-  const cartDiv = document.getElementById('cart-items');
-  const clearBtn = document.getElementById('clear-cart-btn');
-  const saveBtn = document.getElementById('save-order-btn');
-
-  if (cart.length === 0) {
-    cartDiv.innerHTML = '<p>No items in cart. Add a product to get started.</p>';
-    clearBtn.disabled = true;
-    saveBtn.disabled = true;
-    return;
-  }
-
-  clearBtn.disabled = false;
-  saveBtn.disabled = false;
-
-  cartDiv.innerHTML = cart.map((item, index) => `
-    <div class="cart-item">
-      <div class="item-details">
-        <strong>${escapeHtml(item.productName)}</strong>
-        <div class="item-selections">
-          ${Object.entries(item.selections).map(([propId, valueId]) => {
-            // Find property and value names from the dropdown data
-            const select = document.querySelector(`select[data-property-id="${propId}"]`);
-            const option = select?.querySelector(`option[value="${valueId}"]`);
-            const valueName = option?.textContent || valueId;
-            const propName = select?.dataset.propertyName || propId;
-            return `<span>${propName}: ${escapeHtml(valueName)}</span>`;
-          }).join(' | ')}
-        </div>
-      </div>
-      <div class="item-actions">
-        <button class="edit-btn" onclick="editCartItem(${index})">Edit</button>
-        <button class="delete-btn" onclick="removeCartItem(${index})">Remove</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function removeCartItem(index) {
-  cart.splice(index, 1);
-  updateCartDisplay();
-}
-
-function editCartItem(index) {
-  alert('Edit item coming soon');
-}
-
-// Clear cart
-document.getElementById('clear-cart-btn').addEventListener('click', () => {
-  if (confirm('Clear all items from cart?')) {
-    cart = [];
-    document.getElementById('customer-name').value = '';
-    updateCartDisplay();
-  }
-});
-
 // Save order
 document.getElementById('save-order-btn').addEventListener('click', async () => {
   const customerName = document.getElementById('customer-name').value.trim();
@@ -1053,8 +997,6 @@ document.getElementById('save-order-changes-btn').addEventListener('click', asyn
 });
 
 // ===== ORDER BUILDER =====
-
-let cart = [];
 
 // Load products into dropdowns
 async function loadOrderBuilderProducts() {
