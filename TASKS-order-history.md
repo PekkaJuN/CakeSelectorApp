@@ -38,10 +38,10 @@
 - [x] Auto-refresh after order deleted
 
 ## Phase 3: Polish
-- [ ] CSS for list and modals
-- [ ] Date formatting (human-readable)
-- [ ] Responsive layout
-- [ ] Empty state message
+- [x] CSS for list and modals
+- [x] Date formatting (human-readable)
+- [x] Responsive layout
+- [x] Empty state message
 
 ---
 
