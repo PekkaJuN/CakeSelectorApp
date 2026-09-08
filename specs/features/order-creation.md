@@ -1,5 +1,30 @@
 # Feature: Order Creation
 
+## Status
+
+| AC | Status | Notes |
+|----|--------|-------|
+| AC1 | ✅ Done | Create order with single item |
+| AC2 | ✅ Done | Multiple items, same product |
+| AC3 | ✅ Done | Multiple items, different products |
+| AC4 | ✅ Done | Incomplete properties validation |
+| AC5 | ✅ Done | No product selected validation |
+| AC6 | ✅ Done | Remove item from cart |
+| AC7 | ✅ Done | Edit item in cart |
+| AC8 | ✅ Done | Save order with timestamp |
+| AC9 | ✅ Done | Save without customer name |
+| AC10 | ✅ Done | Save with empty cart |
+| AC11 | ✅ Done | Whitespace-only customer name |
+| AC12 | 🚧 Deferred | Product snapshot at creation |
+| AC13 | ⏳ Pending | Display all property values |
+| AC14 | ⏳ Pending | Product dropdown |
+| AC15 | ⏳ Pending | Property dropdown per product |
+| AC16 | ⏳ Pending | Property value dropdown |
+| AC17 | ⏳ Pending | Clear cart |
+| AC18 | ⏳ Pending | Timestamp verification |
+| AC19 | ⏳ Pending | Item edit validation |
+| AC20 | ✅ Done | Special characters in name |
+
 ## Problem Statement
 
 The application needs to allow users to create orders by selecting products and specifying property values for each item. An order is a collection of one or more items (product + property selections) associated with a customer name and persisted with a timestamp. Without order creation, there is no way to record what customers want to purchase.

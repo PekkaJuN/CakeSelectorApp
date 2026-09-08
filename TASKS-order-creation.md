@@ -14,16 +14,16 @@ Smallest sensible step at a time, in order. Each task closes one or more ACs.
 
 ### Task 1.2: Create order API endpoint
 **Closes:** AC1, AC2, AC3, AC8
-- [ ] Implement `POST /api/orders` route
+- [x] Implement `POST /api/orders` route
   - Validate customerName (not empty, not whitespace)
   - Validate items array (not empty)
   - For each item: validate productId, validate selections complete for product
   - Insert order and items to database
   - Return 201 + full order object
-- [ ] Test AC1: Create order with single item → 201, order with uuid, timestamp
-- [ ] Test AC2: Multiple items same product, different selections → both in database
-- [ ] Test AC3: Multiple items different products → 201, both in database
-- [ ] Test AC8: Full order save → createdAt timestamp set
+- [x] Test AC1: Create order with single item → 201, order with uuid, timestamp
+- [x] Test AC2: Multiple items same product, different selections → both in database
+- [x] Test AC3: Multiple items different products → 201, both in database
+- [x] Test AC8: Full order save → createdAt timestamp set
 
 ### Task 1.3: Validate order creation errors
 **Closes:** AC9, AC10, AC11
