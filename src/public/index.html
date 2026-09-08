@@ -68,10 +68,19 @@
       </div>
     </div>
 
-    <!-- Order History Tab (placeholder) -->
+    <!-- Order History Tab -->
     <div id="order-history-tab" class="tab-content">
       <h2>Order History</h2>
-      <p>Order history and management coming soon...</p>
+
+      <div class="search-section">
+        <input type="text" id="order-search" placeholder="Search by customer name..." />
+      </div>
+
+      <div id="order-history-error" class="error-message"></div>
+
+      <div id="orders-list" class="orders-list">
+        <!-- Orders will be rendered here -->
+      </div>
     </div>
 
     <!-- Edit Product Modal (hidden by default) -->
@@ -250,6 +259,63 @@
         <div class="modal-footer">
           <button class="btn-secondary" onclick="closeEditItemModal()">Cancel</button>
           <button id="save-item-changes-btn" class="btn-primary">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Details Modal (hidden by default) -->
+    <div id="order-details-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Order Details</h3>
+          <button class="close-btn" onclick="closeOrderDetailsModal()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Customer Name:</label>
+            <p id="details-customer-name"></p>
+          </div>
+
+          <div class="form-group">
+            <label>Created:</label>
+            <p id="details-created-date"></p>
+          </div>
+
+          <div class="order-items-section">
+            <h4>Items</h4>
+            <div id="details-order-items" class="order-items-display">
+              <!-- Items will be rendered here -->
+            </div>
+          </div>
+
+          <div id="order-details-error" class="error-message"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="openOrderEditFromHistory()">Edit</button>
+          <button class="btn-danger" onclick="openDeleteOrderModal()">Delete</button>
+          <button class="btn-secondary" onclick="closeOrderDetailsModal()">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Order Confirmation Modal (hidden by default) -->
+    <div id="delete-order-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Delete Order</h3>
+          <button class="close-btn" onclick="closeDeleteOrderModal()">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <p>Are you sure? This will permanently delete this order. This cannot be undone.</p>
+          <div id="delete-order-error" class="error-message"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="closeDeleteOrderModal()">Cancel</button>
+          <button class="btn-danger" onclick="confirmDeleteOrder()">Confirm Delete</button>
         </div>
       </div>
     </div>
