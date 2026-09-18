@@ -14,6 +14,7 @@
       <button class="tab-button active" data-tab="products">Products</button>
       <button class="tab-button" data-tab="order-builder">Order Builder</button>
       <button class="tab-button" data-tab="order-history">Order History</button>
+      <button class="tab-button" data-tab="order-reports">Reports</button>
     </div>
 
     <!-- Products Tab -->
@@ -80,6 +81,41 @@
 
       <div id="orders-list" class="orders-list">
         <!-- Orders will be rendered here -->
+      </div>
+    </div>
+
+    <!-- Order Reports Tab -->
+    <div id="order-reports-tab" class="tab-content">
+      <h2>Weekly Order Reports</h2>
+
+      <div class="report-form">
+        <div class="form-group">
+          <label for="report-date">Reference Date:</label>
+          <input type="date" id="report-date" />
+        </div>
+
+        <div class="form-group">
+          <label for="report-locale">Language:</label>
+          <select id="report-locale">
+            <option value="en">English</option>
+            <option value="fi">Suomi (Finnish)</option>
+          </select>
+        </div>
+
+        <button id="generate-report-btn" class="btn-primary">Generate Report</button>
+      </div>
+
+      <div id="report-error" class="error-message"></div>
+      <div id="report-loading" class="loading-spinner" style="display: none;">
+        <p>Generating report...</p>
+      </div>
+
+      <div id="report-content" style="display: none;">
+        <div class="report-header">
+          <h3 id="report-title"></h3>
+          <div id="report-stats" class="report-stats"></div>
+        </div>
+        <div id="report-text" class="report-text"></div>
       </div>
     </div>
 

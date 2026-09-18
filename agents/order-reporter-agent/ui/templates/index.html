@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Reporter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input[type="date"],
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        input[type="date"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .report-section {
+            margin-top: 40px;
+            padding-top: 40px;
+            border-top: 1px solid #eee;
+        }
+
+        .report-title {
+            color: #333;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .report-content {
+            color: #666;
+            line-height: 1.6;
+            font-size: 14px;
+            white-space: pre-wrap;
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #667eea;
+        }
+
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 12px 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+            margin-top: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Order Reporter</h1>
+        <p class="subtitle">View weekly order statistics</p>
+
+        <form id="reportForm">
+            <div class="form-group">
+                <label for="date">Reference Date:</label>
+                <input type="date" id="date" name="date" value="{{ default_date }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="locale">Language:</label>
+                <select id="locale" name="locale">
+                    <option value="en">English</option>
+                    <option value="fi">Suomi (Finnish)</option>
+                </select>
+            </div>
+
+            <button type="submit">Generate Report</button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Generating report...</p>
+        </div>
+
+        <div id="error"></div>
+        <div id="report"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('reportForm');
+        const loading = document.getElementById('loading');
+        const errorDiv = document.getElementById('error');
+        const reportDiv = document.getElementById('report');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            loading.classList.add('active');
+            errorDiv.innerHTML = '';
+            reportDiv.innerHTML = '';
+
+            const date = document.getElementById('date').value;
+            const locale = document.getElementById('locale').value;
+
+            try {
+                const response = await fetch('/api/report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reference_date: date, locale })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    renderReport(data, locale);
+                } else {
+                    showError(data.error || 'Unknown error');
+                }
+            } catch (err) {
+                showError(`Network error: ${err.message}`);
+            } finally {
+                loading.classList.remove('active');
+            }
+        });
+
+        function renderReport(data, locale) {
+            const analysis = data.analysis || {};
+            const isEnglish = locale === 'en';
+
+            let html = `<div class="report-section">`;
+            html += `<div class="report-title">${isEnglish ? 'Weekly Report' : 'Viikon raportti'}</div>`;
+
+            html += `<div class="stats-grid">`;
+            html += `<div class="stat-card">
+                <div class="stat-label">${isEnglish ? 'Total Orders' : 'Tilauksia yhteensä'}</div>
+                <div class="stat-value">${analysis.total_orders || 0}</div>
+            </div>`;
+            html += `<div class="stat-card">
+                <div class="stat-label">${isEnglish ? 'Total Items' : 'Tuotteita yhteensä'}</div>
+                <div class="stat-value">${analysis.total_items || 0}</div>
+            </div>`;
+            html += `<div class="stat-card">
+                <div class="stat-label">${isEnglish ? 'Avg per Order' : 'Keski per tilaus'}</div>
+                <div class="stat-value">${analysis.avg_items_per_order || 0}</div>
+            </div>`;
+            html += `</div>`;
+
+            html += `<div class="report-content">${escapeHtml(data.answer)}</div>`;
+            html += `</div>`;
+
+            reportDiv.innerHTML = html;
+        }
+
+        function showError(message) {
+            errorDiv.innerHTML = `<div class="error">⚠️ ${escapeHtml(message)}</div>`;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

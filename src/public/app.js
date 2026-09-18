@@ -1261,5 +1261,93 @@ document.querySelectorAll('.tab-button').forEach(button => {
     if (e.target.dataset.tab === 'order-history') {
       loadOrderHistory();
     }
+    if (e.target.dataset.tab === 'order-reports') {
+      initReportTab();
+    }
   });
 });
+
+// ===== Order Reports Tab =====
+
+function initReportTab() {
+  const dateInput = document.getElementById('report-date');
+  const today = new Date().toISOString().split('T')[0];
+  if (!dateInput.value) {
+    dateInput.value = today;
+  }
+}
+
+document.getElementById('generate-report-btn')?.addEventListener('click', async () => {
+  const dateInput = document.getElementById('report-date');
+  const localeSelect = document.getElementById('report-locale');
+  const errorDiv = document.getElementById('report-error');
+  const loadingDiv = document.getElementById('report-loading');
+  const contentDiv = document.getElementById('report-content');
+
+  errorDiv.textContent = '';
+  loadingDiv.style.display = 'block';
+  contentDiv.style.display = 'none';
+
+  const referenceDate = dateInput.value;
+  const locale = localeSelect.value;
+
+  try {
+    const response = await fetch('/api/agent/report/weekly', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        reference_date: referenceDate,
+        locale: locale
+      })
+    });
+
+    const data = await response.json();
+    loadingDiv.style.display = 'none';
+
+    if (data.status !== 'success') {
+      errorDiv.textContent = `Error: ${data.error || 'Unknown error'}`;
+      return;
+    }
+
+    renderReport(data, locale);
+  } catch (error) {
+    console.error('Error generating report:', error);
+    loadingDiv.style.display = 'none';
+    errorDiv.textContent = `Network error: ${error.message}`;
+  }
+});
+
+function renderReport(data, locale) {
+  const analysis = data.analysis || {};
+  const contentDiv = document.getElementById('report-content');
+  const titleEl = document.getElementById('report-title');
+  const statsEl = document.getElementById('report-stats');
+  const textEl = document.getElementById('report-text');
+
+  const isEnglish = locale === 'en';
+  const startDate = analysis.period_start || '';
+  const endDate = analysis.period_end || '';
+
+  titleEl.textContent = isEnglish
+    ? `Weekly Report (${startDate} – ${endDate})`
+    : `Viikon raportti (${startDate} – ${endDate})`;
+
+  const statsHtml = `
+    <div class="stat-box">
+      <div class="stat-label">${isEnglish ? 'Total Orders' : 'Tilauksia yhteensä'}</div>
+      <div class="stat-value">${analysis.total_orders || 0}</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">${isEnglish ? 'Total Items' : 'Tuotteita yhteensä'}</div>
+      <div class="stat-value">${analysis.total_items || 0}</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">${isEnglish ? 'Avg per Order' : 'Keski per tilaus'}</div>
+      <div class="stat-value">${analysis.avg_items_per_order || 0}</div>
+    </div>
+  `;
+
+  statsEl.innerHTML = statsHtml;
+  textEl.textContent = data.answer || '';
+  contentDiv.style.display = 'block';
+}

@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import productsRouter from './routes/products.js';
 import ordersRouter from './routes/orders.js';
+import agentApiRouter from './routes/agent-api.js';
 import * as db from './db/db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -16,6 +17,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Routes
 app.use('/api/products', productsRouter);
 app.use('/api/orders', ordersRouter);
+app.use('/api/agent', agentApiRouter);
 
 // GET /api/properties/:id/values - List all values for a property
 app.get('/api/properties/:id/values', async (req, res) => {

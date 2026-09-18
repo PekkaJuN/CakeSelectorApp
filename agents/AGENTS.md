@@ -155,6 +155,7 @@ Add a row when you create an agent. Other projects that copy this kit should rep
 | Agent | Description | Status |
 |-------|-------------|--------|
 | `homework-coach-agent` | **Reference example.** Who should do which chore and when; who has done the most. CLI, FastAPI `:8001`, Flask `:5001`. | Active |
+| `order-reporter-agent` | Weekly order analytics from the CakeSelectorApp database. Order counts, top products, top customers. CLI, FastAPI `:8002`, Flask `:5002`. No API key required. | Active |
 
 ---
 
