@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cake Recommender</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 28px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .results {
+            margin-top: 30px;
+            display: none;
+        }
+        .results.active {
+            display: block;
+        }
+        .results-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .cake-card {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 4px;
+        }
+        .cake-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .cake-details {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+        }
+        .error {
+            background: #fee;
+            border-left: 4px solid #f44;
+            color: #c33;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        .error.active {
+            display: block;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+            font-size: 14px;
+        }
+        .loading.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎂 Cake Recommender</h1>
+
+        <form id="recommendForm">
+            <div class="form-group">
+                <label for="dietary">Dietary Restriction (optional)</label>
+                <select id="dietary" name="dietary_restriction">
+                    <option value="">Any</option>
+                    <option value="vegan">Vegan</option>
+                    <option value="gluten-free">Gluten-Free</option>
+                    <option value="dairy-free">Dairy-Free</option>
+                    <option value="nut-free">Nut-Free</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="serves">Number of People (optional)</label>
+                <input type="number" id="serves" name="serves" placeholder="e.g., 12" min="1" max="200">
+            </div>
+
+            <button type="submit">Find Cakes</button>
+        </form>
+
+        <div class="loading" id="loading">Searching...</div>
+        <div class="error" id="error"></div>
+
+        <div class="results" id="results">
+            <div class="results-title" id="resultsTitle"></div>
+            <div id="cakesList"></div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('recommendForm');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const results = document.getElementById('results');
+        const cakesList = document.getElementById('cakesList');
+        const resultsTitle = document.getElementById('resultsTitle');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const dietary = document.getElementById('dietary').value;
+            const serves = document.getElementById('serves').value;
+
+            loading.classList.add('active');
+            error.classList.remove('active');
+            results.classList.remove('active');
+
+            try {
+                const response = await fetch('/api/recommend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        dietary_restriction: dietary || null,
+                        serves: serves ? parseInt(serves) : null
+                    })
+                });
+
+                if (!response.ok) throw new Error('Request failed');
+
+                const data = await response.json();
+
+                if (data.cakes && data.cakes.length > 0) {
+                    resultsTitle.textContent = `Found ${data.count} cake${data.count !== 1 ? 's' : ''}:`;
+                    cakesList.innerHTML = data.cakes.map(cake => `
+                        <div class="cake-card">
+                            <div class="cake-name">${cake.name}</div>
+                            <div class="cake-details">
+                                <strong>Price:</strong> $${cake.price.toFixed(2)}<br>
+                                <strong>Serves:</strong> ${cake.servings_min}-${cake.servings_max} people<br>
+                                <strong>Details:</strong> ${cake.description}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    resultsTitle.textContent = 'No cakes found';
+                    cakesList.innerHTML = '<p style="color: #999;">Try different filters</p>';
+                }
+
+                results.classList.add('active');
+            } catch (err) {
+                error.textContent = 'Error: ' + err.message;
+                error.classList.add('active');
+            } finally {
+                loading.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>

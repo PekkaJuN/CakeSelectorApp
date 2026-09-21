@@ -98,34 +98,66 @@ async def health():
     return {"status": "ok"}
 ```
 
-### 5. Tools (`tools/`)
+# Tools, skills, memory
 
-Each tool is a standalone script: argparse, JSON on stdout, exit 0/1.
+## Every tool is a standalone CLI
+#!/usr/bin/env python3
+import argparse, json, sys
+def main():
+    parser = argparse.ArgumentParser(description="what this does")
+    # arguments...
+    result = {"status": "success", "data": ...}
+    print(json.dumps(result)); sys.exit(0)
 
-### 6. Skills (`skills/`)
+Rules: argparse in, JSON out, exit 0 on success / 1 on error.
+No agent imports — a tool must run, and be tested, without the
+agent around it. The agent is only as reliable as the tools it
+can verify.
 
-```markdown
+## Skill format (skills/<skill-name>.md)
 ---
 name: skill-name
-description: When to use this skill
-tools: [tool1, tool2]
+description: when to use this skill
+tools: [tool_one, tool_two]
 ---
+Purpose · when to use · tools and their roles · one example
+invocation.
 
-## Purpose
-## When to Use
-## Tools Required
-## Example
-```
+Skills are the agent’s manual: the model reads them to decide which
+tool fits. A tool without a skill is invisible at decision time.
 
-### 7. Subagents (`subagents/`)
+## Memory
+All state behind memory/memory.py (a CLI like any tool). Data
+shapes in *_schema.json; storage under memory/data/ (SQLite or
+ChromaDB for retrieval). The agent never touches storage directly.
 
-Independent CLIs. JSON stdout. The main agent invokes them with subprocess.
+## Subagents
+A subagent is a standalone CLI with one narrow job: input via args
+or stdin, structured JSON out. The main agent runs it as a separate
+process and reads the result — that is what keeps a slow step
+(search, enrichment, a long analysis) out of the main loop.
+Delegation over new responsibilities.
 
-### 8. Memory (`memory/`)
+## Model backend — the part that makes it an agent
+The reasoning layer lives behind ONE function:
 
-- `memory.py` — CLI + library for persist/list/get
-- `*_schema.json` — document the records
-- `data/` — gitignore payload files; keep `.gitkeep`
+    def decide_next_action(state, skills) -> dict:
+        """state + skills in; the next action out:
+           {"type": "tool", "tool": ..., "args": [...]}
+           {"type": "finish", "report": ..., "exit_code": 0|1}"""
+
+Rules:
+- The API key comes from the environment (GEMINI_API_KEY), never
+  from the source. `.env` is in `.gitignore` before the first commit.
+- No other function calls the model. Swapping Gemini for Claude, or
+  for a local model, is then a change inside one function.
+- A deterministic stand-in of this function is a legitimate way to
+  build and test the loop offline — but ship the model-backed one.
+  A loop whose decisions are if-statements is a script, not an
+  agent. (Week 3’s factory itself needs no key: it drives CLI tools.
+  The agent it runs is the thing that needs one.)
+- The model decides WHICH tool and WHETHER to continue. It never
+  decides whether a guardrail applies.
 
 ### 9. Tests (`tests/`)
 
@@ -156,6 +188,7 @@ Add a row when you create an agent. Other projects that copy this kit should rep
 |-------|-------------|--------|
 | `homework-coach-agent` | **Reference example.** Who should do which chore and when; who has done the most. CLI, FastAPI `:8001`, Flask `:5001`. | Active |
 | `order-reporter-agent` | Weekly order analytics from the CakeSelectorApp database. Order counts, top products, top customers. CLI, FastAPI `:8002`, Flask `:5002`. No API key required. | Active |
+| `cake-recommender-agent` | Recommend cakes based on dietary restrictions (vegan, gluten-free, dairy-free, nut-free) and serving size. CLI, FastAPI `:8003`, Flask `:5003`. Integrated with CakeSelectorApp UI. | Active |
 
 ---
 
@@ -194,19 +227,34 @@ Load `.env` then `.env.local` from the agent folder and parents (`agent_env.py` 
 
 ---
 
-## Workflow: new agent
+## Workflow: create agent
 
-1. **Scaffold**
-   ```bash
-   mkdir -p agents/{agent-name}/{ui/templates,api,tools,skills,subagents,memory/data,tests}
-   cp agents/homework-coach-agent/agent_env.py agents/{agent-name}/
-   ```
-2. **Core + tests** — domain rules in `{domain}_core.py`, pytest first.
-3. **Skills** — one markdown file per job the agent does.
-4. **Tools + subagents** — JSON CLIs; main agent orchestrates.
-5. **Memory** — schemas + `memory.py` + empty `data/.gitkeep`.
-6. **API + UI** — FastAPI and Flask, same payload as CLI.
-7. **Register** — add a row to the table above.
-8. **Verify in a browser** — exercise the Flask UI (and host-app page if you embed one). HTTP unit tests are not a substitute for the main click path.
+The build order for a new agent — also exactly what week 3’s agent
+factory automates, so doing it by hand once is the point:
 
-Do not copy host-app routes, ports, or product names from the homework coach unless they apply. The kit is the folder shape and the core-first rule; the example is one domain.
+1. Create the folder shape:
+   mkdir -p agents/<name>/{tools,skills,subagents,memory/data}
+2. Start the main CLI from the base template
+   (session-3-ai-agents/gemini_agent.py) and adapt it
+3. Invent the first tool (Exercise 1): describe it, let the model
+   implement, test it ALONE before wiring it in
+4. Write its skill file — without one the agent never picks it
+5. Add memory when the agent needs to remember across runs
+   (Exercise 2: embed + store + retrieve)
+6. Wire guardrails: blocked patterns, and the stopping condition
+   from your /goal pass
+7. Register the agent in this file so others can find it
+
+The three-exercise arc (session-3-ai-agents/exercises/) walks
+3 -> 5 -> the full agent in that order.
+
+
+## Guardrails
+- Never touch `migrations/` or `.env`.
+- Never run a command that deletes data.
+- Stop after two consecutive red rounds.
+- Stop if the same file changes three times in a row.
+- Stop and ask when the spec does not cover the case.
+
+## When you notice something
+One line in INBOX.md. Do not implement it. Do not detour.

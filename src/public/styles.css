@@ -910,3 +910,185 @@ button {
   font-size: 0.95em;
   color: #555;
 }
+
+/* Cake Recommendations */
+.recommendation-form {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  background-color: #f9f9f9;
+  padding: 20px;
+  border-radius: 4px;
+}
+
+.recommendation-form .form-group {
+  margin-bottom: 0;
+  flex: 1;
+  min-width: 150px;
+}
+
+.recommendation-form .form-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 5px;
+  color: #666;
+  font-size: 0.95em;
+}
+
+.recommendation-form input,
+.recommendation-form select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95em;
+}
+
+.recommendation-form button {
+  padding: 10px 20px;
+  font-size: 0.95em;
+  flex: 0 1 auto;
+  min-width: 140px;
+}
+
+#get-recommendations-btn {
+  background-color: #333;
+  color: white;
+}
+
+#get-recommendations-btn:hover {
+  background-color: #555;
+}
+
+#view-all-cakes-btn {
+  background-color: #666;
+  color: white;
+}
+
+#view-all-cakes-btn:hover {
+  background-color: #888;
+}
+
+.recommendations-header {
+  margin: 20px 0;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-left: 4px solid #FFA500;
+  border-radius: 4px;
+}
+
+.recommendations-header h3 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 1.2em;
+}
+
+.recommendations-header p {
+  margin: 0;
+  color: #666;
+  font-size: 0.95em;
+}
+
+.cakes-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.cakes-list > p {
+  grid-column: 1 / -1;
+  color: #999;
+  font-style: italic;
+  text-align: center;
+  padding: 40px;
+}
+
+.cake-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 18px;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.cake-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #FFA500;
+  transform: translateY(-2px);
+}
+
+.cake-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.cake-header h4 {
+  margin: 0;
+  color: #333;
+  font-size: 1.15em;
+  flex: 1;
+}
+
+.cake-price {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #FFA500;
+  white-space: nowrap;
+}
+
+.cake-description {
+  font-size: 0.9em;
+  color: #666;
+  margin-bottom: 15px;
+  line-height: 1.4;
+}
+
+.cake-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 12px;
+}
+
+.detail-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.9em;
+}
+
+.detail-group .label {
+  font-weight: 500;
+  color: #666;
+  flex: 0 0 auto;
+  min-width: 80px;
+}
+
+.detail-group .value {
+  color: #333;
+  flex: 1;
+  text-align: right;
+}
+
+@media (max-width: 600px) {
+  .recommendation-form {
+    flex-direction: column;
+  }
+
+  .recommendation-form button {
+    width: 100%;
+  }
+
+  .cakes-list {
+    grid-template-columns: 1fr;
+  }
+}

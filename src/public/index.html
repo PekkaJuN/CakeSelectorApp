@@ -14,6 +14,7 @@
       <button class="tab-button active" data-tab="products">Products</button>
       <button class="tab-button" data-tab="order-builder">Order Builder</button>
       <button class="tab-button" data-tab="order-history">Order History</button>
+      <button class="tab-button" data-tab="cake-recommendations">Recommendations</button>
       <button class="tab-button" data-tab="order-reports">Reports</button>
     </div>
 
@@ -81,6 +82,47 @@
 
       <div id="orders-list" class="orders-list">
         <!-- Orders will be rendered here -->
+      </div>
+    </div>
+
+    <!-- Cake Recommendations Tab -->
+    <div id="cake-recommendations-tab" class="tab-content">
+      <h2>Cake Recommendations</h2>
+
+      <div class="recommendation-form">
+        <div class="form-group">
+          <label for="dietary-restriction">Dietary Restriction:</label>
+          <select id="dietary-restriction">
+            <option value="">-- Any --</option>
+            <option value="vegan">Vegan</option>
+            <option value="gluten-free">Gluten-Free</option>
+            <option value="dairy-free">Dairy-Free</option>
+            <option value="nut-free">Nut-Free</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="serving-size">Number of People to Serve:</label>
+          <input type="number" id="serving-size" placeholder="e.g., 8" min="1" />
+        </div>
+
+        <button id="get-recommendations-btn" class="btn-primary">Get Recommendations</button>
+        <button id="view-all-cakes-btn" class="btn-secondary">View All Cakes</button>
+      </div>
+
+      <div id="recommendation-error" class="error-message"></div>
+      <div id="recommendation-loading" class="loading-spinner" style="display: none;">
+        <p>Finding perfect cakes...</p>
+      </div>
+
+      <div id="recommendations-content" style="display: none;">
+        <div class="recommendations-header">
+          <h3 id="recommendations-title"></h3>
+          <p id="recommendations-answer"></p>
+        </div>
+        <div id="recommendations-list" class="cakes-list">
+          <!-- Cake recommendations will be rendered here -->
+        </div>
       </div>
     </div>
 

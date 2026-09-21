@@ -1264,8 +1264,135 @@ document.querySelectorAll('.tab-button').forEach(button => {
     if (e.target.dataset.tab === 'order-reports') {
       initReportTab();
     }
+    if (e.target.dataset.tab === 'cake-recommendations') {
+      initRecommendationsTab();
+    }
   });
 });
+
+// ===== Cake Recommendations Tab =====
+
+function initRecommendationsTab() {
+  const errorDiv = document.getElementById('recommendation-error');
+  errorDiv.textContent = '';
+}
+
+document.getElementById('get-recommendations-btn')?.addEventListener('click', async () => {
+  const dietarySelect = document.getElementById('dietary-restriction');
+  const servingInput = document.getElementById('serving-size');
+  const errorDiv = document.getElementById('recommendation-error');
+  const loadingDiv = document.getElementById('recommendation-loading');
+  const contentDiv = document.getElementById('recommendations-content');
+
+  errorDiv.textContent = '';
+  loadingDiv.style.display = 'block';
+  contentDiv.style.display = 'none';
+
+  const dietary = dietarySelect.value || null;
+  const serves = servingInput.value ? parseInt(servingInput.value) : null;
+
+  if (!dietary && !serves) {
+    loadingDiv.style.display = 'none';
+    errorDiv.textContent = 'Please select a dietary restriction or enter a serving size';
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/agent/recommend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        dietary_restriction: dietary,
+        serves: serves
+      })
+    });
+
+    const data = await response.json();
+    loadingDiv.style.display = 'none';
+
+    if (data.status !== 'ok') {
+      errorDiv.textContent = `Error: ${data.error || 'Failed to get recommendations'}`;
+      return;
+    }
+
+    renderRecommendations(data);
+  } catch (error) {
+    console.error('Error getting recommendations:', error);
+    loadingDiv.style.display = 'none';
+    errorDiv.textContent = `Error: ${error.message}`;
+  }
+});
+
+document.getElementById('view-all-cakes-btn')?.addEventListener('click', async () => {
+  const errorDiv = document.getElementById('recommendation-error');
+  const loadingDiv = document.getElementById('recommendation-loading');
+  const contentDiv = document.getElementById('recommendations-content');
+
+  errorDiv.textContent = '';
+  loadingDiv.style.display = 'block';
+  contentDiv.style.display = 'none';
+
+  try {
+    const response = await fetch('/api/agent/cakes');
+    const data = await response.json();
+    loadingDiv.style.display = 'none';
+
+    if (data.status !== 'ok') {
+      errorDiv.textContent = `Error: ${data.error || 'Failed to fetch cakes'}`;
+      return;
+    }
+
+    renderRecommendations(data, true);
+  } catch (error) {
+    console.error('Error fetching cakes:', error);
+    loadingDiv.style.display = 'none';
+    errorDiv.textContent = `Error: ${error.message}`;
+  }
+});
+
+function renderRecommendations(data, isViewAll = false) {
+  const titleEl = document.getElementById('recommendations-title');
+  const answerEl = document.getElementById('recommendations-answer');
+  const listEl = document.getElementById('recommendations-list');
+  const contentDiv = document.getElementById('recommendations-content');
+
+  titleEl.textContent = isViewAll ? 'All Available Cakes' : 'Cake Recommendations';
+  answerEl.textContent = data.answer || '';
+
+  if (!data.cakes || data.cakes.length === 0) {
+    listEl.innerHTML = '<p>No cakes found.</p>';
+  } else {
+    listEl.innerHTML = data.cakes.map(cake => `
+      <div class="cake-card">
+        <div class="cake-header">
+          <h4>${escapeHtml(cake.name)}</h4>
+          <span class="cake-price">$${cake.price.toFixed(2)}</span>
+        </div>
+        <p class="cake-description">${escapeHtml(cake.description || '')}</p>
+        <div class="cake-details">
+          <div class="detail-group">
+            <span class="label">Serves:</span>
+            <span class="value">${cake.servings_min}–${cake.servings_max} people</span>
+          </div>
+          ${cake.dietary_flags && cake.dietary_flags.length > 0 ? `
+            <div class="detail-group">
+              <span class="label">Dietary:</span>
+              <span class="value">${escapeHtml(cake.dietary_flags.join(', '))}</span>
+            </div>
+          ` : ''}
+          ${cake.ingredients && cake.ingredients.length > 0 ? `
+            <div class="detail-group">
+              <span class="label">Ingredients:</span>
+              <span class="value">${escapeHtml(cake.ingredients.join(', '))}</span>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  contentDiv.style.display = 'block';
+}
 
 // ===== Order Reports Tab =====
 
