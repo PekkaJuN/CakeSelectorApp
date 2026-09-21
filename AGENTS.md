@@ -116,6 +116,8 @@ branched on.
 - Never "fix" a failing test by editing the test - the spec decides
   which one is wrong, and the spec is corrected first
 - Stop after two consecutive red rounds and report - do not thrash
+- Stop if the same file changes three times in a row.
+- Stop and ask when the spec does not cover the case.
 - <your line - what must never happen in THIS project>
 
 ## When you notice something

@@ -1,392 +1,811 @@
 # Feature: Authentication and Authorization
 
+**Source:** `specs/authen_author_prd.md` v1.1
+**Status:** Draft — not implemented
+**AC numbering:** matches the PRD. AC numbers are stable identifiers shared by both
+documents and by the test names, so they append rather than renumber. AC1–AC55 come
+from PRD v1.0, AC56–AC67 from the password-hashing revision in v1.1.
+
+> This spec is the buildable form of the PRD: same behaviour, expressed as the
+> template demands — every AC with a precise expected value, every file that
+> changes, and a test row for each AC. Where it makes an implementation decision
+> the PRD left open or stated differently, it says so inline.
+
 ## Problem Statement
 
-The application currently has no access control mechanism. All users can access all features and data without session identification. The system needs to distinguish between two types of users: **Admin** (who create/edit products and view all orders) and **OrderUser** (who place orders and view only their own orders). Two hardcoded users are configured at startup: Admin (password: "Admin") and OrderUser (password: "OrderUser"). Without authentication, there is no way to identify which user is accessing the system. Without authorization, there is no way to enforce role-based access control. This feature introduces login/logout, session management, and role-based access restrictions to core API endpoints and UI features.
+Anyone who can reach `http://localhost:3000` today can manage the product catalog,
+read every order, run the weekly report and use the recommender. There is no login,
+no session, and no notion of who is acting.
+
+The app is used by two kinds of people: the owner, who runs the catalog and reads
+the reports, and an order taker, who only enters orders and asks the recommender
+what to suggest. Nothing currently separates them.
+
+Two further problems shape the design rather than motivating it:
+
+- Credentials have to live somewhere. Putting them in the database means a schema
+  change and a chicken-and-egg problem at first boot; putting them in code means
+  they reach the repo. They go in a **config file** that is git-ignored.
+- A config file of passwords is a file of passwords. They are stored **scrypt-hashed
+  with a per-user salt**, so a leaked file yields no plaintext.
 
 ## Proposed Change
 
-### Authentication
-- **Login page:** A public login form where users enter username and password (only hardcoded users accepted: "Admin" or "OrderUser")
-- **Hardcoded users:** Two users are defined at application startup:
-  - **Admin:** username "Admin", password "Admin"
-  - **OrderUser:** username "OrderUser", password "OrderUser"
-- **Session management:** On successful login, a session token (JWT) is issued and stored in a secure cookie
-- **Logout:** Clear session token and redirect to login page
-- **Protected routes:** All API endpoints require a valid session token; unauthenticated requests receive 401 Unauthorized
+### Roles
 
-### Authorization
-Two user roles with distinct permissions:
+| Role | Tabs | Summary |
+|---|---|---|
+| `admin` | Products, Order Builder, Order History, Recommendations, Reports | Everything |
+| `orderuser` | Order Builder, Recommendations | Enters orders, asks the recommender |
 
-**Admin** (role: `admin`)
-- Can view and manage products (create/edit/delete product, add/edit/delete properties and values)
-- Can view all orders from all OrderUsers
-- Can mark orders as completed/cancelled
-- Cannot place orders
+An `orderuser` sees exactly two tabs. Order Builder is their landing tab; Products
+is the landing tab for `admin`, as it is today.
 
-**OrderUser** (role: `orderuser`)
-- Can place new orders
-- Can view only their own orders (not others')
-- Can cancel their own orders (if not already completed)
-- Cannot access product management or view other users' orders
+### User store — `config/users.json`
 
-### UI Changes
-- **Public pages:** Login page (username/password for Admin or OrderUser only)
-- **Authenticated pages:** 
-  - Products tab (Admin only, hidden for OrderUser)
-  - Orders tab (All authenticated users; Admin sees all, OrderUser sees only theirs)
-  - Reports tab (Admin only, hidden for OrderUser; aggregated order statistics and summaries)
-  - Logout button (all authenticated users)
-- **Redirects:** Unauthenticated users trying to access protected routes are redirected to login; users accessing role-restricted pages see 403 Forbidden
+Read once at startup. No plaintext password appears in it. Each user carries a hash
+and, **as its own separate field**, the salt that hash was derived with.
+
+```json
+{
+  "sessionTtlHours": 8,
+  "hash": {
+    "algorithm": "scrypt",
+    "keyLength": 64,
+    "cost": 16384,
+    "blockSize": 8,
+    "parallelization": 1
+  },
+  "users": [
+    {
+      "username": "admin",
+      "role": "admin",
+      "salt": "3f9a1c7d2e8b4a60f15c93d7b2e4a081",
+      "passwordHash": "a1b2…(128 hex chars)…9f0e"
+    }
+  ]
+}
+```
+
+- `salt` — 16 random bytes hex-encoded (32 chars), fresh per user, never derived
+  from the username, never shared between users
+- `passwordHash` — `scrypt(password, salt, keyLength)` hex-encoded (128 chars)
+- scrypt parameters live in the file so they can be raised later without
+  invalidating hashes already generated under the old ones
+- `AUTH_CONFIG_PATH` overrides the path, which is how tests load a fixture
+
+Hashes are generated by `npm run auth:hash`, which prompts for the password with
+echo disabled and prints the JSON block to paste. The password is never a command
+argument — that would put it in shell history and in the process list — and the
+tool never writes to `config/users.json`, so it cannot clobber a working user list.
+
+### Login, sessions, logout
+
+- `POST /api/auth/login` — hashes the submitted password against the user's stored
+  salt and compares with `crypto.timingSafeEqual`. Unknown usernames still pay for
+  a hash, so response latency does not reveal which usernames exist.
+- Session token: 32 random bytes, hex, held in an in-memory `Map` against
+  `{username, role, expiresAt}`. Cookie `cake_session`, `HttpOnly; SameSite=Strict;
+  Path=/`. `Secure` only when `HTTPS=true` — the app is plain HTTP on localhost, and
+  an unconditional `Secure` flag means the cookie never comes back.
+- Expiry is absolute, not sliding: issued at T, dead at T + TTL.
+- Sessions are in memory: restarting the server logs everyone out. `npm run dev`
+  restarts on every file save, so this is a daily occurrence, not an edge case.
+- `POST /api/auth/logout` is idempotent — `200` whether or not a session existed.
+- `GET /api/auth/me` returns `{username, role}`; the frontend calls it on load to
+  decide which tabs to render.
+
+### Where authorization is enforced
+
+**This amends PRD §6.2.** The PRD puts `requireAdmin` inside each router. Doing that
+breaks all four existing test files in `tests/routes/`, which mount routers on a
+bare Express app with no session, and it scatters the policy across three files.
+
+Instead: **one policy table, mounted on `/api` ahead of the routers**, with
+**default deny**. Two allowlists — routes needing no session, and routes either role
+may call — and everything else is admin-only. A route added later without a thought
+for auth is admin-only automatically, which is the failure direction that cannot
+hurt. The routers stay untouched and their tests keep passing unchanged.
+
+First match wins; paths are relative to the `/api` mount point:
+
+| Method | Path pattern | Access |
+|---|---|---|
+| POST | `^/auth/(login\|logout)$` | public — no session |
+| GET | `^/auth/me$` | both roles |
+| GET | `^/products$` | both roles |
+| GET | `^/products/[^/]+/properties$` | both roles |
+| GET | `^/properties/[^/]+/values$` | both roles |
+| POST | `^/orders$` | both roles |
+| POST | `^/agent/recommend$` | both roles |
+| GET | `^/agent/(cakes\|health)$` | both roles |
+| *any* | *anything else under `/api`* | **admin only** |
+
+**Read access to the catalog for `orderuser` is deliberate.** Order Builder cannot
+fill its product dropdown or its property pickers without `GET /api/products`,
+`GET /api/products/:id/properties` and `GET /api/properties/:id/values`. "No access
+to the Products tab" means no management UI and no writes; reading the catalog is
+part of building an order.
+
+Resulting effective access, for the routes that exist today:
+
+| Method | Endpoint | admin | orderuser |
+|---|---|---|---|
+| GET | `/api/products` | ✅ | ✅ |
+| POST/PUT/DELETE | `/api/products…` | ✅ | ❌ 403 |
+| GET | `/api/products/:id/properties` | ✅ | ✅ |
+| POST | `/api/products/:id/properties` | ✅ | ❌ 403 |
+| GET | `/api/properties/:id/values` | ✅ | ✅ |
+| POST | `/api/properties/:id/values` | ✅ | ❌ 403 |
+| DELETE | `/api/properties/:id` | ✅ | ❌ 403 |
+| PUT/DELETE | `/api/propertyValues/:id` | ✅ | ❌ 403 |
+| POST | `/api/orders` | ✅ | ✅ |
+| GET | `/api/orders`, `/api/orders/:id` | ✅ | ❌ 403 |
+| PUT/DELETE | `/api/orders/:id`, `…/items/:itemId` | ✅ | ❌ 403 |
+| POST | `/api/agent/recommend` | ✅ | ✅ |
+| GET | `/api/agent/cakes`, `/api/agent/health` | ✅ | ✅ |
+| POST | `/api/agent/report/weekly` | ✅ | ❌ 403 |
+
+### Denial responses
+
+| Situation | Status | Body |
+|---|---|---|
+| No session / expired / unknown token | `401` | `{error: "Unauthorized: valid session required"}` |
+| Valid session, wrong role | `403` | `{error: "Access denied: admin only"}` |
+
+Authentication is checked before role, so an anonymous caller to an admin endpoint
+gets `401`, never `403`.
+
+### UI
+
+- **Login screen** replaces the tab UI entirely when `GET /api/auth/me` returns
+  `401`. Nothing about the catalog or the orders renders before a session exists.
+- **Tabs the role may not use are removed from the DOM**, not hidden with CSS. A
+  hidden-but-present button is one devtools click from being pressed and leaves dead
+  handlers wired up.
+- **Header** shows `Signed in as <username> (<role>)` and a Log out button.
+- **Any `401` mid-session** tears the UI down and returns to login with "Your
+  session has expired. Please log in again." This is what a user sees after the TTL
+  lapses and after every server restart.
+
+### Two consequences, stated plainly
+
+1. **An `orderuser` can save an order but cannot see it again.** Order History is
+   admin-only, so a saved order leaves their view for good. This follows the
+   requirement as written. If order takers need to review their own work, that needs
+   a `createdBy` column and a filtered history — outside this spec. **Open question
+   for the reviewer** (PRD §11).
+2. **Orders carry no author.** The `orders` table has `customerName` but no
+   `createdBy`, so nothing here can answer "which user entered this order".
 
 ## Acceptance Criteria
 
-### Authentication: Login
+### Configuration
 
-#### AC1: Login with valid Admin credentials
-**Given** the login form is displayed  
-**When** user enters username "Admin" and password "Admin" and clicks "Login"  
-**Then** status 200 is returned; a session token (JWT) is issued with role "admin"; user is redirected to the home page; browser stores the token in a secure, httpOnly cookie named "session"
+#### AC1: Valid config starts the server
+**Given** `config/users.json` holds `admin` and `orderuser`, each with a `salt` and a `passwordHash` generated from `admin123` and `order123`
+**When** the server starts
+**Then** it starts successfully and both users can log in with those plaintext passwords
 
-#### AC2: Login with valid OrderUser credentials
-**Given** the login form is displayed  
-**When** user enters username "OrderUser" and password "OrderUser" and clicks "Login"  
-**Then** status 200 is returned; a session token (JWT) is issued with role "orderuser"; user is redirected to the home page; browser stores the token in a secure, httpOnly cookie named "session"
+#### AC2: Missing config file
+**Given** no file exists at the config path
+**When** the server starts
+**Then** it exits with code 1 and prints `Auth config not found at <path>` to stderr
 
-#### AC3: Login with invalid username
-**Given** the login form is displayed  
-**When** user enters username "InvalidUser" and password "InvalidPass" and clicks "Login"  
-**Then** status 401 is returned; response is {error: "Invalid username or password"}; no token is issued; user remains on login page; password field is cleared
+#### AC3: Unknown role
+**Given** a config user with role `"superuser"`
+**When** the server starts
+**Then** it exits with code 1 and prints `Invalid role "superuser" for user "<name>": must be "admin" or "orderuser"`
 
-#### AC4: Login with incorrect password for Admin
-**Given** the login form is displayed  
-**When** user enters username "Admin" and password "WrongPassword" and clicks "Login"  
-**Then** status 401 is returned; response is {error: "Invalid username or password"}; no token is issued; user remains on login page; password field is cleared
+#### AC4: Duplicate username
+**Given** `config/users.json` lists the username `admin` twice
+**When** the server starts
+**Then** it exits with code 1 and prints `Duplicate username in auth config: admin`
 
-#### AC5: Login with incorrect password for OrderUser
-**Given** the login form is displayed  
-**When** user enters username "OrderUser" and password "WrongPassword" and clicks "Login"  
-**Then** status 401 is returned; response is {error: "Invalid username or password"}; no token is issued; user remains on login page; password field is cleared
+#### AC5: Empty user list
+**Given** `config/users.json` has `"users": []`
+**When** the server starts
+**Then** it exits with code 1 and prints `Auth config contains no users`
 
-#### AC6: Login with empty username field
-**Given** the login form is displayed  
-**When** user leaves the username field blank, enters a password, and clicks "Login"  
-**Then** no API call is made; a client-side validation error "Username is required" appears; form retains focus on username field
+#### AC6: Config path override
+**Given** `AUTH_CONFIG_PATH=./tests/fixtures/users.json` is set
+**When** the server starts
+**Then** users are read from that path and `config/users.json` is not read
 
-#### AC7: Login with empty password field
-**Given** the login form is displayed  
-**When** user enters a username, leaves the password field blank, and clicks "Login"  
-**Then** no API call is made; a client-side validation error "Password is required" appears; form retains focus on password field
+### Password hashing
 
-#### AC8: Session token expires after 24 hours
-**Given** a user is logged in with a valid session token; token has a 24-hour expiration  
-**When** 24 hours pass without user activity  
-**Then** the token expires; next API request receives 401 Unauthorized; user is automatically logged out and redirected to login page
+#### AC56: Correct password verifies
+**Given** a config user with `salt: "3f9a…"` and a `passwordHash` derived from `admin123` under that salt
+**When** `authenticate("admin", "admin123")` runs
+**Then** it returns `{username: "admin", role: "admin"}`
 
-### Authentication: Logout
+#### AC57: Near-miss password does not verify
+**Given** the same user
+**When** `authenticate("admin", "admin124")` runs
+**Then** it returns `null`
 
-#### AC9: Logout clears session
-**Given** a user is logged in with a valid session token  
-**When** user clicks "Logout" button  
-**Then** the session token is deleted from the server's session store (or blacklisted if using JWT); the httpOnly cookie is cleared; user is redirected to login page; subsequent API requests without token receive 401 Unauthorized
+#### AC58: Salts are per-user
+**Given** two config users created with the same password
+**When** the config is inspected
+**Then** their `salt` values differ and their `passwordHash` values differ
 
-#### AC10: Logout button visible only when authenticated
-**Given** a user is logged in  
-**When** user views the navigation bar  
-**Then** a "Logout" button is visible and clickable
+#### AC59: Non-hex salt rejected at startup
+**Given** a config user whose `salt` is `"not-hex!!"`
+**When** the server starts
+**Then** it exits with code 1 and prints `Invalid salt for user "<name>": must be hex`
 
-#### AC11: Logout button hidden when not authenticated
-**Given** user is on the login page (not authenticated)  
-**When** user views the page  
-**Then** no "Logout" button is visible
+#### AC60: Wrong-length hash rejected at startup
+**Given** a config user with a 64-character `passwordHash` while `hash.keyLength` is `64` (which requires 128)
+**When** the server starts
+**Then** it exits with code 1 and prints `Invalid passwordHash for user "<name>": expected 128 hex characters, got 64`
 
-### Authorization: Product Management
+#### AC61: Missing salt rejected at startup
+**Given** a config user with a `passwordHash` but no `salt`
+**When** the server starts
+**Then** it exits with code 1 and prints `Missing salt for user "<name>"`
 
-#### AC12: Admin can view Products tab
-**Given** a user with role "admin" is logged in  
-**When** user navigates to the home page  
-**Then** the "Products" tab is visible in the navigation; clicking it displays the product management UI
+#### AC62: Leftover plaintext field rejected at startup
+**Given** a config user that still carries a `password` field
+**When** the server starts
+**Then** it exits with code 1 and prints `User "<name>" has a plaintext "password" field; hash it with npm run auth:hash`
 
-#### AC13: OrderUser cannot access Products tab
-**Given** a user with role "orderuser" is logged in  
-**When** user is on the home page  
-**Then** the "Products" tab is not visible in the navigation; if user manually navigates to /products or calls GET /api/products, status 403 Forbidden is returned with {error: "Access denied: admin only"}
+#### AC63: Unsupported algorithm rejected at startup
+**Given** `hash.algorithm` is `"md5"`
+**When** the server starts
+**Then** it exits with code 1 and prints `Unsupported hash algorithm "md5": only "scrypt" is supported`
 
-#### AC14: Unauthenticated user cannot access Products tab
-**Given** no user is logged in  
-**When** user tries to navigate to /products  
-**Then** user is redirected to /login page
+#### AC64: Hash parameter defaults
+**Given** no `hash` block in the config
+**When** the server starts
+**Then** defaults apply: `algorithm: "scrypt"`, `keyLength: 64`, `cost: 16384`, `blockSize: 8`, `parallelization: 1`
 
-#### AC15: Admin can create product
-**Given** an admin is logged in with valid session token  
-**When** admin calls POST /api/products {name: "Chocolate Cake"}  
-**Then** status 201 is returned; product is created
+#### AC65: Hash tool prints a pasteable block
+**Given** `scripts/hash-password.js` is run with username `admin` and password `admin123` entered twice
+**When** it completes
+**Then** it prints a JSON block containing `"username": "admin"`, a 32-character hex `salt` and a 128-character hex `passwordHash`, and `config/users.json` is not modified
 
-#### AC16: OrderUser cannot create product
-**Given** an orderuser is logged in with valid session token  
-**When** orderuser calls POST /api/products {name: "Chocolate Cake"}  
-**Then** status 403 Forbidden is returned; response is {error: "Access denied: admin only"}; no product is created
+#### AC66: Hash tool rejects a mismatched confirmation
+**Given** the hash tool is run and the confirmation entry does not match the first
+**When** it completes
+**Then** it prints `Passwords do not match` and exits with code 1 without printing a hash
 
-#### AC17: Unauthenticated user cannot create product
-**Given** no session token is provided (or token is invalid/expired)  
-**When** user calls POST /api/products {name: "Chocolate Cake"}  
-**Then** status 401 Unauthorized is returned; response is {error: "Unauthorized: valid session required"}; no product is created
+#### AC67: Hash tool rejects a short password
+**Given** the hash tool is run with the password `short`
+**When** it completes
+**Then** it prints `Password must be at least 8 characters` and exits with code 1 without printing a hash
 
-#### AC18: Admin can delete product
-**Given** an admin is logged in; product "cake1" exists with no orders  
-**When** admin calls DELETE /api/products/cake1  
-**Then** status 200 is returned; product is deleted
+### Login
 
-#### AC19: OrderUser cannot delete product
-**Given** an orderuser is logged in; product "cake1" exists  
-**When** orderuser calls DELETE /api/products/cake1  
-**Then** status 403 Forbidden is returned; response is {error: "Access denied: admin only"}; product is not deleted
+#### AC7: Admin login succeeds
+**Given** the login screen
+**When** `POST /api/auth/login {username: "admin", password: "admin123"}` is sent
+**Then** status is `200`, body is `{username: "admin", role: "admin"}`, and `Set-Cookie` sets `cake_session` with `HttpOnly`, `SameSite=Strict`, `Path=/`
 
-### Authorization: Reports
+#### AC8: OrderUser login succeeds
+**Given** the login screen
+**When** `POST /api/auth/login {username: "orderuser", password: "order123"}` is sent
+**Then** status is `200` and body is `{username: "orderuser", role: "orderuser"}`
 
-#### AC20: Admin can view Reports tab
-**Given** a user with role "admin" is logged in  
-**When** user navigates to the home page  
-**Then** the "Reports" tab is visible in the navigation; clicking it displays the reports page with order statistics and summaries
+#### AC9: Username is case-insensitive
+**Given** the login screen
+**When** `POST /api/auth/login {username: "ADMIN", password: "admin123"}` is sent
+**Then** status is `200` and body is `{username: "admin", role: "admin"}`
 
-#### AC21: OrderUser cannot access Reports tab
-**Given** a user with role "orderuser" is logged in  
-**When** user is on the home page  
-**Then** the "Reports" tab is not visible in the navigation; if user manually navigates to /reports or calls GET /api/reports, status 403 Forbidden is returned with {error: "Access denied: admin only"}
+#### AC10: Wrong password rejected
+**Given** the login screen
+**When** `POST /api/auth/login {username: "admin", password: "wrong"}` is sent
+**Then** status is `401`, body is `{error: "Invalid username or password"}`, and no `cake_session` cookie is set
 
-#### AC22: Unauthenticated user cannot access Reports tab
-**Given** no user is logged in  
-**When** user tries to navigate to /reports  
-**Then** user is redirected to /login page
+#### AC11: Unknown username rejected identically
+**Given** the login screen
+**When** `POST /api/auth/login {username: "nobody", password: "whatever"}` is sent
+**Then** status is `401` and body is `{error: "Invalid username or password"}` — byte-identical to AC10
 
-#### AC23: Admin can fetch reports data
-**Given** an admin is logged in with valid session token  
-**When** admin calls GET /api/reports  
-**Then** status 200 is returned; response contains order statistics (total orders, total revenue, orders by status, etc.)
+#### AC12: Missing username
+**Given** the login screen
+**When** `POST /api/auth/login {password: "admin123"}` is sent
+**Then** status is `400` and body is `{error: "Username is required"}`
 
-#### AC24: OrderUser cannot fetch reports data
-**Given** an orderuser is logged in with valid session token  
-**When** orderuser calls GET /api/reports  
-**Then** status 403 Forbidden is returned; response is {error: "Access denied: admin only"}; no data is returned
+#### AC13: Missing password
+**Given** the login screen
+**When** `POST /api/auth/login {username: "admin"}` is sent
+**Then** status is `400` and body is `{error: "Password is required"}`
 
-#### AC25: Unauthenticated user cannot fetch reports data
-**Given** no session token is provided (or token is invalid/expired)  
-**When** user calls GET /api/reports  
-**Then** status 401 Unauthorized is returned; response is {error: "Unauthorized: valid session required"}; no data is returned
+#### AC14: Client-side blank username
+**Given** the login form is displayed
+**When** the user leaves username blank and clicks "Log in"
+**Then** no request is sent and "Username is required" appears under the username field
 
-### Authorization: Orders
+#### AC15: Client-side blank password
+**Given** the login form is displayed
+**When** the user enters a username, leaves password blank and clicks "Log in"
+**Then** no request is sent and "Password is required" appears under the password field
 
-#### AC26: OrderUser can place order for themselves
-**Given** an orderuser is logged in; orderuser id is "orderuser1"  
-**When** orderuser calls POST /api/orders {items: [...]}, orderuser id is read from session token  
-**Then** status 201 is returned; order is created with userId = "orderuser1"
+#### AC16: Rejected login restores the form
+**Given** a login attempt returned `401`
+**When** the response is rendered
+**Then** "Invalid username or password" is shown above the form, the password field is empty and focused, and the username field still holds what was typed
 
-#### AC27: Admin cannot place orders
-**Given** an admin is logged in  
-**When** admin calls POST /api/orders {items: [...]}  
-**Then** status 403 Forbidden is returned; response is {error: "Access denied: orderuser only"}; no order is created
+### Logout
 
-#### AC28: OrderUser cannot place order for another user
-**Given** an orderuser with id "orderuser1" is logged in  
-**When** orderuser calls POST /api/orders {userId: "orderuser2", items: [...]}  
-**Then** status 201 is returned; order is created with userId = "orderuser1" (from token, userId field ignored)
+#### AC17: Logout clears the session
+**Given** a valid session
+**When** `POST /api/auth/logout` is sent
+**Then** status is `200`, body is `{ok: true}`, the cookie is cleared with `Max-Age=0`, and the next `GET /api/auth/me` with the old token returns `401`
 
-#### AC29: OrderUser can view only their own orders
-**Given** orderuser "orderuser1" is logged in; orderuser1 has orders ord1, ord2; orderuser2 has order ord3  
-**When** orderuser1 calls GET /api/orders  
-**Then** status 200 is returned; response contains only [ord1, ord2]; ord3 is not included
+#### AC18: Logout is idempotent
+**Given** no session
+**When** `POST /api/auth/logout` is sent
+**Then** status is `200` and body is `{ok: true}`
 
-#### AC30: Admin can view all orders
-**Given** an admin is logged in; orderuser1 has orders ord1, ord2; orderuser2 has order ord3  
-**When** admin calls GET /api/orders  
-**Then** status 200 is returned; response contains [ord1, ord2, ord3] from all orderusers
+### Sessions
 
-#### AC31: OrderUser cannot view another user's order
-**Given** orderuser "orderuser1" is logged in; order "ord3" belongs to orderuser2  
-**When** orderuser1 calls GET /api/orders/ord3  
-**Then** status 403 Forbidden is returned; response is {error: "Access denied: this order belongs to another user"}; order details are not disclosed
+#### AC19: Session valid within TTL
+**Given** a session created at T with `sessionTtlHours: 8`
+**When** `GET /api/auth/me` is called at T + 7h59m
+**Then** status is `200`
 
-#### AC32: Admin can view any user's order
-**Given** an admin is logged in; order "ord3" belongs to orderuser2  
-**When** admin calls GET /api/orders/ord3  
-**Then** status 200 is returned; order details are returned
+#### AC20: Session expires at TTL
+**Given** a session created at T with `sessionTtlHours: 8`
+**When** `GET /api/auth/me` is called at T + 8h01m
+**Then** status is `401`, body is `{error: "Unauthorized: valid session required"}`, and the cookie is cleared
 
-#### AC33: OrderUser can cancel their own order
-**Given** orderuser1 has order "ord1" with status "pending"  
-**When** orderuser1 calls PUT /api/orders/ord1 {status: "cancelled"}  
-**Then** status 200 is returned; order status is updated to "cancelled"
+#### AC21: Forged token rejected
+**Given** a request carrying `cake_session=deadbeef`, a token the server never issued
+**When** any protected endpoint is called
+**Then** status is `401` and body is `{error: "Unauthorized: valid session required"}`
 
-#### AC34: OrderUser cannot cancel another user's order
-**Given** orderuser1 is logged in; order "ord3" belongs to orderuser2 with status "pending"  
-**When** orderuser1 calls PUT /api/orders/ord3 {status: "cancelled"}  
-**Then** status 403 Forbidden is returned; response is {error: "Access denied: this order belongs to another user"}; order status remains unchanged
+#### AC22: Current user returned
+**Given** a valid admin session
+**When** `GET /api/auth/me` is called
+**Then** status is `200` and body is `{username: "admin", role: "admin"}`
 
-#### AC35: Admin can mark order as completed
-**Given** an admin is logged in; order "ord1" has status "pending"  
-**When** admin calls PUT /api/orders/ord1 {status: "completed"}  
-**Then** status 200 is returned; order status is updated to "completed"
+#### AC23: No cookie rejected
+**Given** no cookie at all
+**When** `GET /api/auth/me` is called
+**Then** status is `401`
 
-#### AC36: OrderUser cannot mark orders as completed
-**Given** an orderuser is logged in  
-**When** orderuser calls PUT /api/orders/ord1 {status: "completed"}  
-**Then** status 403 Forbidden is returned; response is {error: "Access denied: admin only"}; order status remains unchanged
+### Admin authorization
 
-### Session and Token Management
+#### AC24: Admin reads products
+**Given** an admin session
+**When** `GET /api/products` is called
+**Then** status is `200` and the product list is returned
 
-#### AC37: Session token is valid for 24 hours
-**Given** a user logs in at time T  
-**When** the session token is issued  
-**Then** the token includes an expiration time (exp claim in JWT) set to T + 24 hours (86400 seconds)
+#### AC25: Admin creates a product
+**Given** an admin session
+**When** `POST /api/products {name: "Carrot Cake"}` is called
+**Then** status is `201` and the product is created
 
-#### AC38: Token is stored in httpOnly secure cookie
-**Given** a user logs in successfully  
-**When** the server issues the session token  
-**Then** the token is set in a cookie named "session" with flags: httpOnly=true, Secure=true (HTTPS only), SameSite=Strict; the token is not accessible via JavaScript (document.cookie does not return it)
+#### AC26: Admin reads all orders
+**Given** an admin session
+**When** `GET /api/orders` is called
+**Then** status is `200` and all orders are returned
 
-#### AC39: Invalid token returns 401
-**Given** a user calls an API endpoint with a token that is malformed, expired, or never signed by the server  
-**When** the request is processed  
-**Then** status 401 Unauthorized is returned; response is {error: "Unauthorized: valid session required"}
+#### AC27: Admin runs the weekly report
+**Given** an admin session
+**When** `POST /api/agent/report/weekly` is called
+**Then** the request reaches the order reporter agent — `200`, or `503` if the agent is not running; the guard does not interfere either way
 
-#### AC40: Missing token returns 401
-**Given** a user makes an API request without providing a session token (no cookie, no Authorization header)  
-**When** the request is processed  
-**Then** status 401 Unauthorized is returned; response is {error: "Unauthorized: valid session required"}
+#### AC28: Admin uses the recommender
+**Given** an admin session
+**When** `POST /api/agent/recommend` is called
+**Then** the request reaches the cake recommender agent
 
-### UI: Login and Logout
+#### AC29: Admin can build orders
+**Given** an admin session
+**When** `POST /api/orders {customerName: "Ada", items: [...]}` is called
+**Then** status is `201`
 
-#### AC41: Login page accessible without authentication
-**Given** no user is logged in  
-**When** user navigates to /login  
-**Then** login form is displayed; form has username input, password input, and "Login" button; no signup link shown (signup not available)
+### OrderUser authorization
 
-#### AC42: Logged-in user cannot access login page
-**Given** a user is logged in  
-**When** user navigates to /login  
-**Then** user is automatically redirected to the home page (/)
+#### AC30: OrderUser reads the product catalog
+**Given** an orderuser session
+**When** `GET /api/products` is called
+**Then** status is `200` — the catalog is readable for the Order Builder pickers
 
-### UI: Navigation and Role-Based Visibility
+#### AC31: OrderUser reads properties
+**Given** an orderuser session
+**When** `GET /api/products/:id/properties` is called
+**Then** status is `200`
 
-#### AC43: Admin sees all tabs
-**Given** an admin is logged in  
-**When** user views the navigation bar  
-**Then** tabs visible are: "Products", "Orders", "Reports", "Logout"; username "Admin" is displayed
+#### AC32: OrderUser reads property values
+**Given** an orderuser session
+**When** `GET /api/properties/:id/values` is called
+**Then** status is `200`
 
-#### AC44: OrderUser sees limited tabs
-**Given** an orderuser is logged in  
-**When** user views the navigation bar  
-**Then** tabs visible are: "Orders", "Logout"; "Products" and "Reports" tabs are not shown; username "OrderUser" is displayed
+#### AC33: OrderUser cannot create a product
+**Given** an orderuser session
+**When** `POST /api/products {name: "Carrot Cake"}` is called
+**Then** status is `403`, body is `{error: "Access denied: admin only"}`, and no product is created
 
-#### AC45: Unauthenticated user sees login link
-**Given** no user is logged in  
-**When** user views the page  
-**Then** only "Login" link is visible in the navigation
+#### AC34: OrderUser cannot rename a product
+**Given** an orderuser session and an existing product `p1`
+**When** `PUT /api/products/p1 {name: "Renamed"}` is called
+**Then** status is `403` and the product name is unchanged
 
-## Files to Modify / Create
+#### AC35: OrderUser cannot delete a product
+**Given** an orderuser session and an existing product `p1`
+**When** `DELETE /api/products/p1` is called
+**Then** status is `403` and the product still exists
+
+#### AC36: OrderUser cannot create a property
+**Given** an orderuser session
+**When** `POST /api/products/:id/properties {name: "Size"}` is called
+**Then** status is `403` and no property is created
+
+#### AC37: OrderUser saves an order
+**Given** an orderuser session
+**When** `POST /api/orders {customerName: "Ada", items: [...]}` is called
+**Then** status is `201` and the order is saved
+
+#### AC38: OrderUser cannot list orders
+**Given** an orderuser session
+**When** `GET /api/orders` is called
+**Then** status is `403` and body is `{error: "Access denied: admin only"}`
+
+#### AC39: OrderUser cannot read an order
+**Given** an orderuser session and an existing order `o1`
+**When** `GET /api/orders/o1` is called
+**Then** status is `403` and no order data is returned
+
+#### AC40: OrderUser cannot edit an order
+**Given** an orderuser session and an existing order `o1`
+**When** `PUT /api/orders/o1 {customerName: "Grace"}` is called
+**Then** status is `403` and the order is unchanged
+
+#### AC41: OrderUser cannot delete an order
+**Given** an orderuser session and an existing order `o1`
+**When** `DELETE /api/orders/o1` is called
+**Then** status is `403` and the order still exists
+
+#### AC42: OrderUser uses the recommender
+**Given** an orderuser session
+**When** `POST /api/agent/recommend {dietary_restriction: "vegan", serves: 8}` is called
+**Then** the request reaches the cake recommender agent — not `403`
+
+#### AC43: OrderUser lists recommender cakes
+**Given** an orderuser session
+**When** `GET /api/agent/cakes` is called
+**Then** the request reaches the cake recommender agent — not `403`
+
+#### AC44: OrderUser cannot run the weekly report
+**Given** an orderuser session
+**When** `POST /api/agent/report/weekly` is called
+**Then** status is `403` and body is `{error: "Access denied: admin only"}`
+
+### Unauthenticated access
+
+#### AC45: No session cannot read products
+**Given** no session
+**When** `GET /api/products` is called
+**Then** status is `401` and body is `{error: "Unauthorized: valid session required"}`
+
+#### AC46: No session cannot create orders
+**Given** no session
+**When** `POST /api/orders` is called
+**Then** status is `401` and no order is created
+
+#### AC47: 401 precedes 403
+**Given** no session
+**When** `POST /api/agent/report/weekly` is called
+**Then** status is `401` — not `403`
+
+#### AC48: No session cannot reach the recommender
+**Given** no session
+**When** `GET /api/agent/cakes` is called
+**Then** status is `401`
+
+### UI
+
+#### AC49: Login screen replaces the app
+**Given** no session
+**When** `/` is loaded
+**Then** the login screen is displayed and the tab bar and all tab content are absent from the rendered page
+
+#### AC50: Admin sees five tabs
+**Given** a successful admin login
+**When** the page renders
+**Then** five tab buttons are present — Products, Order Builder, Order History, Recommendations, Reports — and Products is the active tab
+
+#### AC51: OrderUser sees two tabs
+**Given** a successful orderuser login
+**When** the page renders
+**Then** exactly two tab buttons are present — Order Builder and Recommendations — and Order Builder is the active tab
+
+#### AC52: Forbidden tabs are removed, not hidden
+**Given** an orderuser is logged in
+**When** the DOM is inspected
+**Then** no element with `data-tab="products"`, `data-tab="order-history"` or `data-tab="order-reports"` exists
+
+#### AC53: Header identifies the user
+**Given** any user is logged in
+**When** the header is viewed
+**Then** it reads `Signed in as <username> (<role>)` and a "Log out" button is present
+
+#### AC54: Log out returns to login
+**Given** a user is logged in
+**When** "Log out" is clicked
+**Then** `POST /api/auth/logout` is sent and the login screen replaces the app UI
+
+#### AC55: Expired session returns to login
+**Given** a logged-in user whose session has expired
+**When** any tab action triggers an API call
+**Then** the login screen is shown with "Your session has expired. Please log in again."
+
+## Files to Modify
+
+### Create
 
 | File | Change |
 |---|---|
-| src/auth/users.js | Create hardcoded users module with two users: Admin (password: "Admin", role: "admin") and OrderUser (password: "OrderUser", role: "orderuser"); export function to validate credentials |
-| src/auth/auth.js | Create authentication module: verifyCredentials (check against hardcoded users), issueToken (JWT), verifyToken, extractUserId and role from token |
-| src/routes/auth.js | Create auth routes: POST /api/auth/login, POST /api/auth/logout, GET /api/auth/me (current user info) |
-| src/routes/products.js | Add authentication middleware to all endpoints; add admin-only authorization checks |
-| src/routes/orders.js | Add authentication middleware to all endpoints; add orderuser/admin authorization checks; filter orders by userId for orderuser requests |
-| src/routes/reports.js | Create reports routes: GET /api/reports (admin-only; returns order statistics and summaries) |
-| src/middleware/authMiddleware.js | Create middleware: verifyToken (extract and validate token from cookie), requireAuth (return 401 if no valid token), requireRole (return 403 if user role doesn't match) |
-| src/public/index.html | Add login page (/login); add navigation with conditional tabs based on user role (include Reports tab for admin); add username display; add logout button |
-| src/public/app.js | Add login form handling, session token management, role-based UI rendering, logout handling, redirect logic for protected routes |
-| src/public/reports.js | Add reports page logic: fetch reports data from /api/reports, display order statistics and summaries in charts/tables (admin only) |
-| src/public/styles.css | Style login form, navigation bar, role-based visibility, username display, reports page and charts |
-| src/public/auth.js | Create client-side auth helper: fetchWithAuth (auto-include token in requests), isAuthenticated, getCurrentUser, logout |
+| `config/users.json` | The user store — hashes and salts only; git-ignored, generated by the operator |
+| `config/users.example.json` | Committed template with real hashes for throwaway passwords, so a fresh clone can log in |
+| `src/auth/password.js` | `generateSalt()`, `hashPassword(password, salt, params)`, `verifyPassword(submitted, user, params)` using async `crypto.scrypt` + `timingSafeEqual`, and the dummy-hash helper that keeps unknown-username timing comparable |
+| `src/auth/userStore.js` | `loadUsers(path)` — read and validate the config at startup, including salt/hash shape; `authenticate(username, password)` |
+| `src/auth/sessions.js` | `createSession(user)`, `getSession(token)`, `destroySession(token)`, periodic sweep of expired entries |
+| `src/middleware/auth.js` | Cookie parsing, session lookup, and the single policy table from "Where authorization is enforced" with default deny |
+| `src/routes/auth.js` | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` |
+| `scripts/hash-password.js` | CLI prompting for a password with echo off; prints the `{username, role, salt, passwordHash}` block |
+| `src/public/login.js` | Login screen rendering, client-side validation, submit handling |
+| `tests/fixtures/users.js` | Generates the test user fixture at `cost: 1024` so hashes cannot drift from the passwords the tests type |
+
+`src/auth/` and `src/middleware/` already exist and are empty — this is what they
+were made for. `src/auth/password.js` already exists from an earlier attempt and
+should be reviewed against this spec rather than assumed correct.
+
+### Modify
+
+| File | Change |
+|---|---|
+| `src/server.js` | Load the user config at boot and exit 1 on any validation failure; mount `src/routes/auth.js` at `/api/auth`; mount the auth middleware on `/api` **before** the three routers so default-deny covers routes added later |
+| `src/routes/products.js` | No change — the policy table covers it |
+| `src/routes/orders.js` | No change — the policy table covers it |
+| `src/routes/agent-api.js` | No change — the policy table covers it |
+| `src/public/index.html` | Login screen markup; header user block and Log out button; `login.js` script tag |
+| `src/public/app.js` | Bootstrap via `GET /api/auth/me`; remove tab buttons and tab content the role may not use; activate the first permitted tab; central `401` handler that returns to the login screen |
+| `src/public/styles.css` | Login screen, header user block, Log out button |
+| `.gitignore` | Add `config/users.json` |
+| `package.json` | Add `"auth:hash": "node scripts/hash-password.js"` |
+| `README.md` | First-run section: copy the example config, generate a hash, restart |
+| `AGENTS.md` | Replace the "No authentication" constraint with the two-role rule |
 
 ## Risk
 
-- **What could break:** Token hijacking if stored insecurely; privilege escalation if authorization checks are incomplete or bypassed; orderusers seeing other users' orders if filtering is not enforced; credentials exposed if hardcoded users module is not protected
-- **Mitigation:** 
-  - Store tokens in httpOnly, Secure cookies (not localStorage or sessionStorage)
-  - Add authorization middleware to ALL protected endpoints, not just a subset
-  - Every order query must filter by userId for orderuser requests
-  - Hardcoded user credentials should only be in the application (not in version control comments or logs)
-  - Add audit logging for sensitive operations (login attempts, order access, cancellations)
-- **Rollback:** Remove auth middleware from all routes; remove login page; remove navigation role checks; remove userId filtering on order queries; revert routes to public access
+**What could break**
+
+- **A missed route is an open door.** Any `/api` route added later without a policy
+  entry would be public if the table defaulted to allow. *Mitigation:* the table
+  defaults to **admin-only**, and the middleware mounts ahead of every router.
+- **Existing route tests.** The four files in `tests/routes/` mount routers on a
+  bare app with no session. *Mitigation:* the guards live in `server.js`, not the
+  routers, so those tests are untouched — this is the main reason for the amendment
+  to PRD §6.2.
+- **Order Builder breaking for `orderuser`.** Its dropdowns need three GET
+  endpoints that sit under Products. *Mitigation:* those three are on the
+  both-roles allowlist, with AC30–AC32 covering them.
+- **Hiding tabs is not access control.** *Mitigation:* every hidden tab has a
+  server-side denial; AC33–AC44 assert the server side independently of the UI.
+- **A leaked `config/users.json`.** *Mitigation:* scrypt with a per-user salt and
+  `cost: 16384` (~100ms per guess) makes offline brute force impractical for
+  anything but a trivially weak password; the file is git-ignored.
+- **Weak passwords survive hashing.** Hashing does not rescue `admin`/`admin`.
+  *Mitigation:* the hash tool rejects passwords under 8 characters (AC67).
+- **A forgotten password cannot be recovered**, only regenerated. *Mitigation:*
+  one `npm run auth:hash` command and one field edit; documented in the README.
+- **Blocking the event loop.** `scryptSync` at production cost would freeze the
+  single process for ~100ms per login. *Mitigation:* the async form only; asserted
+  by a test row.
+- **Sessions lost on restart**, which `npm run dev` causes on every file save.
+  *Accepted* — AC55's message covers it and logging back in is a two-field form.
+
+**Rollback**
+
+Remove the auth middleware mount and the `/api/auth` mount from `src/server.js`,
+and stop removing tabs in `src/public/app.js`. The auth modules, the config file and
+the hash tool can stay in place unused. No database schema changes, so there is
+nothing to migrate back.
 
 ## Testing Strategy (MANDATORY)
 
-| Function | Case | Given | When | Then |
-|---|---|---|---|---|
-| POST /api/auth/login | valid Admin login | login form displayed | POST {username: "Admin", password: "Admin"} | status 200, response {username: "Admin", role: "admin"}, session cookie set with JWT token, token expires in 24 hours |
-| POST /api/auth/login | valid OrderUser login | login form displayed | POST {username: "OrderUser", password: "OrderUser"} | status 200, response {username: "OrderUser", role: "orderuser"}, session cookie set with JWT token, token expires in 24 hours |
-| POST /api/auth/login | invalid username | login form displayed | POST {username: "InvalidUser", password: "InvalidPass"} | status 401, response {error: "Invalid username or password"}, no cookie set |
-| POST /api/auth/login | wrong password for Admin | login form displayed | POST {username: "Admin", password: "WrongPassword"} | status 401, response {error: "Invalid username or password"}, password field cleared |
-| POST /api/auth/login | wrong password for OrderUser | login form displayed | POST {username: "OrderUser", password: "WrongPassword"} | status 401, response {error: "Invalid username or password"}, password field cleared |
-| POST /api/auth/login | empty username | login form displayed | POST {username: "", password: "Admin"} | no API call; client-side error "Username is required" |
-| POST /api/auth/login | empty password | login form displayed | POST {username: "Admin", password: ""} | no API call; client-side error "Password is required" |
-| POST /api/auth/login | missing username field | login form displayed | POST {password: "Admin"} | status 400, response {error: "Username is required"} |
-| POST /api/auth/login | missing password field | login form displayed | POST {username: "Admin"} | status 400, response {error: "Password is required"} |
-| POST /api/auth/logout | valid session | user logged in with valid token | POST /api/auth/logout | status 200, session cookie cleared, user redirected to /login, subsequent requests without new login receive 401 |
-| GET /api/auth/me | Admin valid token | Admin logged in with valid session token | GET /api/auth/me with Admin cookie | status 200, response {username: "Admin", role: "admin"} |
-| GET /api/auth/me | OrderUser valid token | OrderUser logged in with valid session token | GET /api/auth/me with OrderUser cookie | status 200, response {username: "OrderUser", role: "orderuser"} |
-| GET /api/auth/me | missing token | no session token present | GET /api/auth/me without cookie | status 401, response {error: "Unauthorized: valid session required"} |
-| GET /api/auth/me | expired token | token expired 24+ hours ago | GET /api/auth/me with expired cookie | status 401, response {error: "Unauthorized: valid session required"} |
-| GET /api/auth/me | invalid token | malformed or unsigned token | GET /api/auth/me with invalid cookie | status 401, response {error: "Unauthorized: valid session required"} |
-| GET /api/products | admin authenticated | admin logged in with valid token | GET /api/products with admin token | status 200, products list returned |
-| GET /api/products | orderuser authenticated | orderuser logged in with valid token | GET /api/products with orderuser token | status 403, response {error: "Access denied: admin only"} |
-| GET /api/products | unauthenticated | no session token | GET /api/products without token | status 401, response {error: "Unauthorized: valid session required"} |
-| POST /api/products | admin authenticated | admin logged in | POST {name: "Cake"} with admin token | status 201, product created |
-| POST /api/products | orderuser authenticated | orderuser logged in | POST {name: "Cake"} with orderuser token | status 403, response {error: "Access denied: admin only"} |
-| POST /api/products | unauthenticated | no session token | POST {name: "Cake"} without token | status 401, response {error: "Unauthorized: valid session required"} |
-| DELETE /api/products/:id | admin authenticated | admin logged in; product exists with no orders | DELETE /api/products/cake1 with admin token | status 200, product deleted |
-| DELETE /api/products/:id | orderuser authenticated | orderuser logged in; product exists | DELETE /api/products/cake1 with orderuser token | status 403, response {error: "Access denied: admin only"} |
-| DELETE /api/products/:id | unauthenticated | no session token | DELETE /api/products/cake1 without token | status 401, response {error: "Unauthorized: valid session required"} |
-| GET /api/reports | admin authenticated | admin logged in with valid token | GET /api/reports with admin token | status 200, reports data returned with order statistics (total orders, by status, etc.) |
-| GET /api/reports | orderuser authenticated | orderuser logged in with valid token | GET /api/reports with orderuser token | status 403, response {error: "Access denied: admin only"} |
-| GET /api/reports | unauthenticated | no session token | GET /api/reports without token | status 401, response {error: "Unauthorized: valid session required"} |
-| POST /api/orders | orderuser1 authenticated | orderuser1 logged in | POST {items: [...]} with orderuser1 token | status 201, order created with userId "orderuser1" from token |
-| POST /api/orders | orderuser with explicit userId | orderuser1 logged in | POST {userId: "orderuser2", items: [...]} | status 201, order created with userId "orderuser1" (token takes precedence, field ignored) |
-| POST /api/orders | admin authenticated | admin logged in | POST {items: [...]} with admin token | status 403, response {error: "Access denied: orderuser only"} |
-| POST /api/orders | unauthenticated | no session token | POST {items: [...]} without token | status 401, response {error: "Unauthorized: valid session required"} |
-| GET /api/orders | orderuser1 authenticated | orderuser1 logged in; orderuser1 has ord1, ord2; orderuser2 has ord3 | GET /api/orders with orderuser1 token | status 200, response [ord1, ord2] (only their own) |
-| GET /api/orders | admin authenticated | admin logged in; orderuser1 has ord1, ord2; orderuser2 has ord3 | GET /api/orders with admin token | status 200, response [ord1, ord2, ord3] (all orders) |
-| GET /api/orders | unauthenticated | no session token | GET /api/orders without token | status 401, response {error: "Unauthorized: valid session required"} |
-| GET /api/orders/:id | orderuser owns order | orderuser1 logged in; ord1 belongs to orderuser1 | GET /api/orders/ord1 with orderuser1 token | status 200, order details returned |
-| GET /api/orders/:id | orderuser views other's order | orderuser1 logged in; ord3 belongs to orderuser2 | GET /api/orders/ord3 with orderuser1 token | status 403, response {error: "Access denied: this order belongs to another user"} |
-| GET /api/orders/:id | admin authenticated | admin logged in; ord3 belongs to orderuser2 | GET /api/orders/ord3 with admin token | status 200, order details returned |
-| GET /api/orders/:id | unauthenticated | no session token | GET /api/orders/ord1 without token | status 401, response {error: "Unauthorized: valid session required"} |
-| PUT /api/orders/:id | orderuser cancels own order | orderuser1 logged in; ord1 (status "pending") belongs to orderuser1 | PUT /api/orders/ord1 {status: "cancelled"} | status 200, order status updated to "cancelled" |
-| PUT /api/orders/:id | orderuser cancels other's order | orderuser1 logged in; ord3 (status "pending") belongs to orderuser2 | PUT /api/orders/ord3 {status: "cancelled"} | status 403, response {error: "Access denied: this order belongs to another user"} |
-| PUT /api/orders/:id | admin marks order completed | admin logged in; ord1 (status "pending") | PUT /api/orders/ord1 {status: "completed"} | status 200, order status updated to "completed" |
-| PUT /api/orders/:id | orderuser marks order completed | orderuser logged in | PUT /api/orders/ord1 {status: "completed"} | status 403, response {error: "Access denied: admin only"} |
-| PUT /api/orders/:id | unauthenticated | no session token | PUT /api/orders/ord1 {status: "cancelled"} without token | status 401, response {error: "Unauthorized: valid session required"} |
-| Session timeout | token expires after 24 hours | user logged in; token exp set to T+24h | 24 hours pass, then GET /api/orders | status 401, response {error: "Unauthorized: valid session required"}, user auto-logged out |
-| Session security | httpOnly cookie flag | user logs in | inspect Set-Cookie header in response | cookie has flags: httpOnly=true, Secure=true, SameSite=Strict; JavaScript cannot access via document.cookie |
-| UI: Login page | page renders when unauthenticated | no user logged in | navigate to /login | login form displayed with username input, password input, "Login" button; no signup link shown |
-| UI: Login page | redirect when authenticated | user logged in | navigate to /login | user redirected to home page (/) |
-| UI: Navigation for admin | admin tabs | admin logged in | view navigation bar | tabs: "Products", "Orders", "Logout"; username "Admin" displayed |
-| UI: Navigation for orderuser | orderuser tabs | orderuser logged in | view navigation bar | tabs: "Orders", "Logout"; "Products" hidden; username "OrderUser" displayed |
-| UI: Navigation unauthenticated | public links | no user logged in | view navigation bar | only "Login" link visible; no signup link shown |
-| UI: Products tab admin | admin can access | admin logged in | click "Products" tab or navigate to /products | products page loads, product management UI visible |
-| UI: Products tab orderuser | orderuser cannot access | orderuser logged in | click "Products" tab (if visible) or try /products | tab not shown in navigation; if navigated to /products, "Access denied: admin only" error displayed |
-| UI: Reports tab admin | admin can access | admin logged in | click "Reports" tab or navigate to /reports | reports page loads, order statistics displayed |
-| UI: Reports tab orderuser | orderuser cannot access | orderuser logged in | click "Reports" tab (if visible) or try /reports | tab not shown in navigation; if navigated to /reports, "Access denied: admin only" error displayed |
-| UI: Logout button | logout clears session | user logged in | click "Logout" button | status 200, session cookie cleared, user redirected to /login, Logout button disappears from navigation |
-| Form validation (UI) | login form client-side | login form displayed | leave username blank, click Login | client-side error shown, no API call made |
-| Form validation (UI) | login form client-side | login form displayed | leave password blank, click Login | client-side error shown, no API call made |
-| Token validation | malformed token rejected | user attempts to use a token that is not valid JWT | API request with malformed token in cookie | status 401, response {error: "Unauthorized: valid session required"} |
+`node --test` per `npm test`. Fixture users are generated by `tests/fixtures/users.js`
+— `admin`/`admin123`/`admin` and `orderuser`/`order123`/`orderuser` — at `cost: 1024`,
+because production-strength scrypt at ~100ms per login would add minutes across the
+suite. The parameters are config-driven precisely so this is possible. API rows
+drive the Express app directly; UI rows are manual until a browser harness exists.
 
-## Spec Readiness Checklist
+### Config loading — `src/auth/userStore.js`
 
-- [x] Every AC has a precise expected value — no "works correctly"
-  - Each AC specifies exact HTTP status codes, response payloads (exact error messages), cookie flags, UI states, and login credentials
-  
-- [x] Another person could write a test from each AC without asking
-  - ACs describe exact pre-conditions (Given), actions (When), and observable outcomes (Then) with specific hardcoded username/password values
-  
-- [x] Every AC can fail — one that cannot fail proves nothing
-  - ACs test happy paths (AC1, AC2, AC9, AC12, AC15, AC20, AC23, AC24, AC26, AC29, AC35-38, AC41-45), error cases (AC3-7, AC10-11, AC13-19, AC21-22, AC25, AC27-28, AC30, AC33-34, AC39-40), edge cases (AC8, AC22, AC27, AC31-32, AC36-37)
-  
-- [x] Error and edge cases have ACs of their own
-  - Error cases: AC3-7 (login errors), AC10-11 (logout/auth errors), AC13-19 (product/reports authorization errors), AC21-22, AC25, AC27-28, AC30, AC33-34 (order authorization errors), AC39-40 (token errors)
-  - Edge cases: AC8 (token expiry), AC22 (orderuser trying to override userId), AC28 (orderuser trying to access another's order), AC31-32, AC36-37
-  
-- [x] Every AC appears in the testing strategy table
-  - All 45 ACs mapped to comprehensive test cases; multiple test cases per AC for happy path + error variants + edge cases
+| Function | Case | Given | When | Then | AC |
+|---|---|---|---|---|---|
+| `loadUsers` | happy path | fixture with 2 valid users | `loadUsers(path)` | returns 2 users with roles `admin`, `orderuser` | AC1 |
+| `loadUsers` | file missing | no file at path | `loadUsers(path)` | throws `Auth config not found at <path>` | AC2 |
+| `loadUsers` | malformed JSON | file contains `{` | `loadUsers(path)` | throws with the parse error and the path | AC2 |
+| `loadUsers` | bad role | user with role `superuser` | `loadUsers(path)` | throws `Invalid role "superuser" …` | AC3 |
+| `loadUsers` | duplicate username | `admin` listed twice | `loadUsers(path)` | throws `Duplicate username in auth config: admin` | AC4 |
+| `loadUsers` | empty list | `"users": []` | `loadUsers(path)` | throws `Auth config contains no users` | AC5 |
+| `loadUsers` | blank username | user with `"username": "  "` | `loadUsers(path)` | throws naming the entry | AC5 |
+| `loadUsers` | non-hex salt | `"salt": "not-hex!!"` | `loadUsers(path)` | throws `Invalid salt for user "admin": must be hex` | AC59 |
+| `loadUsers` | short hash | 64-char `passwordHash`, `keyLength` 64 | `loadUsers(path)` | throws `… expected 128 hex characters, got 64` | AC60 |
+| `loadUsers` | missing salt | hash present, no `salt` | `loadUsers(path)` | throws `Missing salt for user "admin"` | AC61 |
+| `loadUsers` | leftover plaintext | `password` alongside the hash | `loadUsers(path)` | throws `… has a plaintext "password" field …` | AC62 |
+| `loadUsers` | unsupported algorithm | `"algorithm": "md5"` | `loadUsers(path)` | throws `Unsupported hash algorithm "md5" …` | AC63 |
+| `loadUsers` | default hash params | no `hash` block | `loadUsers(path)` | `{algorithm: "scrypt", keyLength: 64, cost: 16384, blockSize: 8, parallelization: 1}` | AC64 |
+| `loadUsers` | default TTL | no `sessionTtlHours` | `loadUsers(path)` | `sessionTtlHours === 8` | AC19 |
+| `loadUsers` | env override | `AUTH_CONFIG_PATH` set to fixture | server boot | fixture users loaded; `config/users.json` untouched | AC6 |
+| startup | invalid config aborts boot | any invalid fixture | start the server process | exit code 1; message on stderr; no port bound | AC2 |
+| `authenticate` | correct credentials | loaded fixture | `authenticate("admin", "admin123")` | `{username: "admin", role: "admin"}` | AC56 |
+| `authenticate` | case-insensitive username | loaded fixture | `authenticate("ADMIN", "admin123")` | returns the `admin` user | AC9 |
+| `authenticate` | case-sensitive password | loaded fixture | `authenticate("admin", "ADMIN123")` | `null` | AC10 |
+| `authenticate` | near-miss password | loaded fixture | `authenticate("admin", "admin124")` | `null` | AC57 |
+| `authenticate` | wrong password | loaded fixture | `authenticate("admin", "wrong")` | `null` | AC10 |
+| `authenticate` | unknown username | loaded fixture | `authenticate("nobody", "x")` | `null` | AC11 |
+| `authenticate` | unknown user still hashes | spy on the hash helper | `authenticate("nobody", "x")` | the hash helper was called once — no early return | AC11 |
+
+### Password hashing — `src/auth/password.js`, `scripts/hash-password.js`
+
+| Function | Case | Given | When | Then | AC |
+|---|---|---|---|---|---|
+| `generateSalt` | shape | — | `generateSalt()` | 32-character lowercase hex string | AC65 |
+| `generateSalt` | uniqueness | — | two calls | the two salts differ | AC58 |
+| `hashPassword` | deterministic | salt `s`, params `p` | `hashPassword("admin123", s, p)` twice | identical 128-char hex both times | AC56 |
+| `hashPassword` | salt changes the hash | one password, two salts | `hashPassword` with each | the two hashes differ | AC58 |
+| `hashPassword` | keyLength honoured | `keyLength: 32` | `hashPassword(...)` | 64-character hex string | AC60 |
+| `hashPassword` | non-blocking | — | 4 concurrent calls | all resolve; async `scrypt` used, not `scryptSync` | Risk |
+| `verifyPassword` | match | user built from `admin123` | `verifyPassword("admin123", user, p)` | `true` | AC56 |
+| `verifyPassword` | mismatch | user built from `admin123` | `verifyPassword("admin124", user, p)` | `false` | AC57 |
+| `verifyPassword` | truncated stored hash | user whose hash is half-length | `verifyPassword("admin123", user, p)` | `false`, and no throw from `timingSafeEqual` | AC60 |
+| hash tool | happy path | username `admin`, `admin123` twice | run the script | JSON with 32-char hex `salt`, 128-char hex `passwordHash`; `config/users.json` unchanged | AC65 |
+| hash tool | confirmation mismatch | `admin123` then `admin124` | run the script | prints `Passwords do not match`; exit 1; no hash printed | AC66 |
+| hash tool | too short | password `short` | run the script | prints `Password must be at least 8 characters`; exit 1 | AC67 |
+| hash tool | password not an argument | — | inspect the script | password read from the TTY; no `process.argv` entry holds it | AC65 |
+
+### Sessions — `src/auth/sessions.js`
+
+| Function | Case | Given | When | Then | AC |
+|---|---|---|---|---|---|
+| `createSession` | issues a token | admin user object | `createSession(user)` | 64-char hex token; `getSession(token)` yields `{username, role}` | AC7 |
+| `createSession` | tokens are unique | two logins | two calls | the two tokens differ | AC7 |
+| `getSession` | within TTL | created at T, TTL 8h | `getSession` at T+7h59m | returns the session | AC19 |
+| `getSession` | past TTL | created at T, TTL 8h | `getSession` at T+8h01m | `null`, and the entry is dropped | AC20 |
+| `getSession` | unknown token | empty store | `getSession("deadbeef")` | `null` | AC21 |
+| `destroySession` | removes it | valid token | `destroySession` then `getSession` | `null` | AC17 |
+| `destroySession` | unknown token | empty store | `destroySession("deadbeef")` | does not throw | AC18 |
+
+### Auth routes — `src/routes/auth.js`
+
+| Function | Case | Given | When | Then | AC |
+|---|---|---|---|---|---|
+| `POST /api/auth/login` | admin happy path | fixture loaded | `{username: "admin", password: "admin123"}` | `200`; `{username: "admin", role: "admin"}`; `Set-Cookie` has `HttpOnly`, `SameSite=Strict`, `Path=/` | AC7 |
+| `POST /api/auth/login` | orderuser happy path | fixture loaded | `{username: "orderuser", password: "order123"}` | `200`; `{username: "orderuser", role: "orderuser"}` | AC8 |
+| `POST /api/auth/login` | uppercase username | fixture loaded | `{username: "ADMIN", password: "admin123"}` | `200`; `{username: "admin", role: "admin"}` | AC9 |
+| `POST /api/auth/login` | wrong password | fixture loaded | `{username: "admin", password: "wrong"}` | `401`; `{error: "Invalid username or password"}`; no `Set-Cookie` | AC10 |
+| `POST /api/auth/login` | unknown user | fixture loaded | `{username: "nobody", password: "x"}` | `401`; body identical to the wrong-password case | AC11 |
+| `POST /api/auth/login` | missing username | fixture loaded | `{password: "admin123"}` | `400`; `{error: "Username is required"}` | AC12 |
+| `POST /api/auth/login` | blank username | fixture loaded | `{username: "   ", password: "admin123"}` | `400`; `{error: "Username is required"}` | AC12 |
+| `POST /api/auth/login` | missing password | fixture loaded | `{username: "admin"}` | `400`; `{error: "Password is required"}` | AC13 |
+| `POST /api/auth/login` | no `Secure` on HTTP | `HTTPS` unset | successful login | `Set-Cookie` has no `Secure` attribute | AC7 |
+| `POST /api/auth/login` | `Secure` under HTTPS | `HTTPS=true` | successful login | `Set-Cookie` includes `Secure` | AC7 |
+| `POST /api/auth/login` | password never logged | log spy attached | one failed and one successful login | no log line contains `admin123` | Risk |
+| `POST /api/auth/logout` | valid session | logged in | `POST /api/auth/logout` | `200`; `{ok: true}`; `Max-Age=0`; old token now `401` | AC17 |
+| `POST /api/auth/logout` | no session | no cookie | `POST /api/auth/logout` | `200`; `{ok: true}` | AC18 |
+| `GET /api/auth/me` | valid admin session | logged in as admin | `GET /api/auth/me` | `200`; `{username: "admin", role: "admin"}` | AC22 |
+| `GET /api/auth/me` | valid orderuser session | logged in as orderuser | `GET /api/auth/me` | `200`; `{username: "orderuser", role: "orderuser"}` | AC8 |
+| `GET /api/auth/me` | no cookie | not logged in | `GET /api/auth/me` | `401`; `{error: "Unauthorized: valid session required"}` | AC23 |
+| `GET /api/auth/me` | expired session | session past TTL | `GET /api/auth/me` | `401`; cookie cleared | AC20 |
+| `GET /api/auth/me` | forged token | `cake_session=deadbeef` | `GET /api/auth/me` | `401` | AC21 |
+
+### Policy middleware — `src/middleware/auth.js`
+
+| Function | Case | Given | When | Then | AC |
+|---|---|---|---|---|---|
+| policy | valid session passes through | admin cookie | any allowed route | `next()` runs; `req.user` is `{username, role}` | AC24 |
+| policy | no cookie | no session | any protected route | `401`; handler not reached | AC45 |
+| policy | malformed cookie header | `Cookie: garbage` | any protected route | `401`; no throw | AC21 |
+| policy | wrong role | orderuser session | an admin-only route | `403`; `{error: "Access denied: admin only"}` | AC33 |
+| policy | 401 precedes 403 | no session | an admin-only route | `401`, not `403` | AC47 |
+| policy | **default deny** | a route absent from both allowlists | orderuser session | `403` — unmatched routes are admin-only | Risk |
+| policy | login is public | no session | `POST /api/auth/login` | reaches the handler; not `401` | AC7 |
+| policy | logout is public | no session | `POST /api/auth/logout` | reaches the handler; not `401` | AC18 |
+| policy | mounted before routers | no session | `GET /api/products` | `401` from the middleware; the router's handler never runs | AC45 |
+
+### Products and properties
+
+| Function | Case | Given | When | Then | AC |
+|---|---|---|---|---|---|
+| `GET /api/products` | admin | admin session | request | `200`; list | AC24 |
+| `GET /api/products` | orderuser | orderuser session | request | `200`; list | AC30 |
+| `GET /api/products` | unauthenticated | no session | request | `401` | AC45 |
+| `POST /api/products` | admin | admin session | `{name: "Carrot Cake"}` | `201`; created | AC25 |
+| `POST /api/products` | orderuser | orderuser session | `{name: "Carrot Cake"}` | `403`; product count unchanged | AC33 |
+| `POST /api/products` | unauthenticated | no session | `{name: "Carrot Cake"}` | `401`; product count unchanged | AC45 |
+| `PUT /api/products/:id` | orderuser | orderuser session, product `p1` | `{name: "Renamed"}` | `403`; `p1.name` unchanged | AC34 |
+| `DELETE /api/products/:id` | orderuser | orderuser session, product `p1` | request | `403`; `p1` still present | AC35 |
+| `DELETE /api/products/:id` | admin | admin session, unreferenced product | request | `200`; deleted | AC25 |
+| `GET /api/products/:id/properties` | orderuser | orderuser session | request | `200`; properties listed | AC31 |
+| `POST /api/products/:id/properties` | orderuser | orderuser session | `{name: "Size"}` | `403`; no property created | AC36 |
+| `GET /api/properties/:id/values` | orderuser | orderuser session | request | `200`; values listed | AC32 |
+| `POST /api/properties/:id/values` | orderuser | orderuser session | `{value: "large"}` | `403`; no value created | AC36 |
+| `PUT /api/propertyValues/:id` | orderuser | orderuser session | `{value: "x"}` | `403`; value unchanged | AC36 |
+| `DELETE /api/properties/:id` | orderuser | orderuser session | request | `403`; property still present | AC36 |
+
+### Orders
+
+| Function | Case | Given | When | Then | AC |
+|---|---|---|---|---|---|
+| `POST /api/orders` | orderuser | orderuser session | `{customerName: "Ada", items: [...]}` | `201`; order persisted | AC37 |
+| `POST /api/orders` | admin | admin session | same body | `201`; order persisted | AC29 |
+| `POST /api/orders` | unauthenticated | no session | same body | `401`; order count unchanged | AC46 |
+| `GET /api/orders` | admin | admin session, 3 orders | request | `200`; all 3 returned | AC26 |
+| `GET /api/orders` | orderuser | orderuser session | request | `403`; `{error: "Access denied: admin only"}` | AC38 |
+| `GET /api/orders/:id` | orderuser | orderuser session, order `o1` | request | `403`; no order fields in the body | AC39 |
+| `GET /api/orders/:id` | admin | admin session, order `o1` | request | `200`; details returned | AC26 |
+| `PUT /api/orders/:id` | orderuser | orderuser session, order `o1` | `{customerName: "Grace"}` | `403`; `o1.customerName` unchanged | AC40 |
+| `DELETE /api/orders/:id` | orderuser | orderuser session, order `o1` | request | `403`; `o1` still present | AC41 |
+| `DELETE /api/orders/:orderId/items/:itemId` | orderuser | orderuser session | request | `403`; item still present | AC41 |
+
+### Agent endpoints
+
+Both agent services are stubbed, so these rows test the guard, not the agent.
+
+| Function | Case | Given | When | Then | AC |
+|---|---|---|---|---|---|
+| `POST /api/agent/recommend` | orderuser | orderuser session, stub agent | `{dietary_restriction: "vegan", serves: 8}` | not `403`; the stub received the call | AC42 |
+| `POST /api/agent/recommend` | admin | admin session, stub agent | same body | not `403`; the stub received the call | AC28 |
+| `POST /api/agent/recommend` | unauthenticated | no session | same body | `401`; the stub received nothing | AC48 |
+| `GET /api/agent/cakes` | orderuser | orderuser session, stub agent | request | not `403`; the stub received the call | AC43 |
+| `GET /api/agent/cakes` | unauthenticated | no session | request | `401` | AC48 |
+| `POST /api/agent/report/weekly` | admin | admin session, stub agent | `{reference_date: "2026-09-21"}` | not `403`; the stub received the call | AC27 |
+| `POST /api/agent/report/weekly` | orderuser | orderuser session, stub agent | same body | `403`; `{error: "Access denied: admin only"}`; the stub received nothing | AC44 |
+| `POST /api/agent/report/weekly` | unauthenticated | no session | same body | `401`, not `403` | AC47 |
+| `GET /api/agent/health` | orderuser | orderuser session | request | not `403` | AC43 |
+| `GET /api/agent/health` | unauthenticated | no session | request | `401` | AC48 |
+
+### UI — manual until a browser harness exists
+
+| Function | Case | Given | When | Then | AC |
+|---|---|---|---|---|---|
+| Page bootstrap | unauthenticated | no session | load `/` | login screen; no tab bar and no tab content in the DOM | AC49 |
+| Page bootstrap | admin | logged in as admin | load `/` | 5 tabs present; Products active | AC50 |
+| Page bootstrap | orderuser | logged in as orderuser | load `/` | exactly 2 tabs — Order Builder, Recommendations; Order Builder active | AC51 |
+| Tab removal | orderuser | logged in as orderuser | inspect the DOM | no `data-tab="products"`, `="order-history"` or `="order-reports"` element exists | AC52 |
+| Header | any role | logged in | view the header | `Signed in as <username> (<role>)` and a "Log out" button | AC53 |
+| Header | unauthenticated | login screen | view the header | no username, no "Log out" button | AC49 |
+| Login form | blank username | login screen | click "Log in" with username empty | "Username is required"; no network request | AC14 |
+| Login form | blank password | login screen | click "Log in" with password empty | "Password is required"; no network request | AC15 |
+| Login form | rejected credentials | login screen | submit a wrong password | "Invalid username or password"; password cleared and focused; username retained | AC16 |
+| Login form | Enter key | login screen | press Enter in the password field | the form submits | AC7 |
+| Log out | click | logged in | click "Log out" | `POST /api/auth/logout` sent; login screen replaces the app UI | AC54 |
+| Expired session | mid-use `401` | session expired while the page is open | trigger any tab action | login screen with "Your session has expired. Please log in again." | AC55 |
+| Server restart | session lost | logged in, server restarted | trigger any tab action | the same expiry message; login works again after re-entering credentials | AC55 |
+| Order Builder | orderuser end to end | orderuser logged in, catalog populated | add an item, pick properties, save the order | the product dropdown and property pickers populate; the order saves; `201` | AC30–AC32, AC37 |
+
+## Spec Readiness checklist
+
+- [x] **Every AC has a precise expected value** — each names the HTTP status, the
+      exact response body, the exact stderr message, the cookie attributes or the
+      exact DOM state. No AC says "works correctly".
+- [x] **Another person could write a test from each AC without asking** — fixture
+      credentials, endpoint paths, error strings and field lengths are all literal.
+- [x] **Every AC can fail** — none of this behaviour exists today: AC7–AC55 fail for
+      want of a login and a guard, AC56–AC67 for want of a password module.
+- [x] **Error and edge cases have ACs of their own** — bad config (AC2–AC5),
+      malformed salts and hashes (AC59–AC63), leftover plaintext (AC62), bad
+      credentials (AC10–AC13), expired and forged tokens (AC20, AC21), `401` before
+      `403` (AC47), idempotent logout (AC18), case-insensitive username (AC9),
+      session loss mid-use (AC55), hash-tool misuse (AC66, AC67).
+- [x] **Files to modify are listed with what changes in each** — see Files to Modify.
+- [x] **Risk: what could break, and how to roll back** — see Risk, including the
+      default-deny rationale and the no-schema-change rollback.
+- [x] **Testing strategy covers every AC, plus error and edge cases** — the AC column
+      maps every row back; AC1–AC67 each appear at least once, most with a happy path
+      and at least one failure row.
+
+## Open Question for the Reviewer
+
+**Should an `orderuser` be able to see the orders they entered?** As specified they
+cannot — Order History is admin-only, so a saved order disappears from their view.
+That follows the requirement as given, and it is coherent if order takers work from
+paper and the owner reviews everything. If it is wrong, the fix is a `createdBy`
+column on `orders` plus a filtered Order History for `orderuser` — a larger change
+than this spec covers, and one that would add ACs rather than amend these.
