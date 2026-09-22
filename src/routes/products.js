@@ -133,8 +133,30 @@ router.post('/:id/properties', async (req, res) => {
   }
 });
 
+// Property and value routes sit under /api, not /api/products, so they mount
+// separately from the products router.
+export const propertiesRouter = express.Router();
+
+// GET /api/properties/:id/values - List all values for a property
+propertiesRouter.get('/properties/:id/values', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const property = await db.getProperty(id);
+    if (!property) {
+      return res.status(404).json({ error: 'Property not found' });
+    }
+
+    const values = await db.getPropertyValues(id);
+    res.json(values);
+  } catch (error) {
+    console.error('Error fetching property values:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // DELETE /api/properties/:id - Delete property
-router.delete('/properties/:id', async (req, res) => {
+propertiesRouter.delete('/properties/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -155,7 +177,7 @@ router.delete('/properties/:id', async (req, res) => {
 });
 
 // POST /api/properties/:id/values - Add value to property
-router.post('/properties/:id/values', async (req, res) => {
+propertiesRouter.post('/properties/:id/values', async (req, res) => {
   const { id } = req.params;
   const { value } = req.body;
 
@@ -180,7 +202,7 @@ router.post('/properties/:id/values', async (req, res) => {
 });
 
 // PUT /api/propertyValues/:id - Edit property value
-router.put('/values/:id', async (req, res) => {
+propertiesRouter.put('/propertyValues/:id', async (req, res) => {
   const { id } = req.params;
   const { value } = req.body;
 
@@ -203,9 +225,22 @@ router.put('/values/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/propertyValues/:id - Delete property value (not implemented - values cannot be deleted)
-router.delete('/values/:id', async (req, res) => {
-  res.status(405).json({ error: 'Property values cannot be deleted, only edited' });
+// DELETE /api/propertyValues/:id - Delete property value
+propertiesRouter.delete('/propertyValues/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const propValue = await db.getPropertyValue(id);
+    if (!propValue) {
+      return res.status(404).json({ error: 'Value not found' });
+    }
+
+    await db.deletePropertyValue(id);
+    res.json({ deleted: id });
+  } catch (error) {
+    console.error('Error deleting property value:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 export default router;

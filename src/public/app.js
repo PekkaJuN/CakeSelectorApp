@@ -23,6 +23,8 @@ async function loadProducts() {
 
 function renderProductsList(products) {
   const list = document.getElementById('products-list');
+  // The Products tab is removed from the DOM for an orderuser.
+  if (!list) return;
   if (products.length === 0) {
     list.innerHTML = '<p>No products yet. Add one to get started!</p>';
     return;
@@ -80,7 +82,7 @@ function toggleProperties(productId) {
 }
 
 // Add product
-document.getElementById('add-product-btn').addEventListener('click', async () => {
+document.getElementById('add-product-btn')?.addEventListener('click', async () => {
   const nameInput = document.getElementById('product-name');
   const errorDiv = document.getElementById('product-error');
   const name = nameInput.value.trim();
@@ -534,8 +536,19 @@ loadProducts();
 
 let cart = []; // In-memory cart
 
-// Initialize order builder on tab switch
-document.addEventListener('DOMContentLoaded', () => {
+// login.js injects this script only after the session bootstrap resolves, by
+// which time DOMContentLoaded has already fired -- so run now if the document
+// is ready, and wait only when it genuinely is not.
+function whenDocumentReady(run) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', run);
+  } else {
+    run();
+  }
+}
+
+// Initialize order builder
+whenDocumentReady(() => {
   const orderBuilderTab = document.getElementById('order-builder-tab');
   if (orderBuilderTab) {
     initOrderBuilder();

@@ -31,7 +31,11 @@
 
 - **Local deployment only:** Application runs on single machine; no cloud sync, no multi-device support
 - **No external API calls:** All data is local; no third-party service integrations (v1)
-- **No authentication:** No user accounts or login; data isolation relies on machine access control
+- **Two roles, not none:** Every `/api` route sits behind a login. `admin` gets
+  everything; `orderuser` gets Order Builder and Recommendations, plus the catalog
+  reads those need. Users live in `config/users.json` (git-ignored, scrypt-hashed);
+  the policy table in `src/middleware/auth.js` is the single place access is decided,
+  and it defaults to admin-only, so a new route is closed until someone opens it
 - **SQLite only:** Use SQLite for all data persistence; file-based, no server setup
 - **No pricing:** Do not implement pricing/payment features (reserved for v2+)
 - **Minimal dependencies:** Justify all npm packages; prefer built-ins when available

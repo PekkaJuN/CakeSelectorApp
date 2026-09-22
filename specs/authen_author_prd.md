@@ -131,7 +131,7 @@ and see the app before setting its own.
 **Generating a hash** — `npm run auth:hash` runs `scripts/hash-password.js`:
 
 ```
-$ npm run auth:hash -- admin
+$ npm run auth:hash -- admin admin
 Password: ********
 Confirm:  ********
 
@@ -145,8 +145,9 @@ Add this to config/users.json:
 }
 ```
 
-The password is read from a TTY with echo disabled and is never taken as a command
-argument — an argument would land in shell history and in the process list. The
+The role is a required second argument — the tool refuses to guess a privilege
+level. The password is read from a TTY with echo disabled and is never taken as a
+command argument — an argument would land in shell history and in the process list. The
 tool only prints the JSON; it does not edit `config/users.json`, so it can never
 clobber a working user list.
 

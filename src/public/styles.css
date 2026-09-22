@@ -1092,3 +1092,69 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* ============ AUTH ============ */
+
+.user-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #555;
+}
+
+.login-screen {
+  max-width: 360px;
+  margin: 48px auto;
+  padding: 32px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.login-screen h2 {
+  margin-top: 0;
+}
+
+.login-screen .form-group {
+  margin-bottom: 16px;
+}
+
+.login-screen label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.login-screen input {
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.login-screen button {
+  width: 100%;
+}
+
+.login-message:empty,
+.field-error:empty {
+  display: none;
+}
+
+.login-message {
+  margin-bottom: 16px;
+  padding: 10px;
+  border-radius: 4px;
+  background: #fdecea;
+  color: #b3261e;
+}
+
+.field-error {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #b3261e;
+}

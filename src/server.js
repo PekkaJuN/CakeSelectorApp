@@ -1,130 +1,44 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import productsRouter from './routes/products.js';
+import productsRouter, { propertiesRouter } from './routes/products.js';
 import ordersRouter from './routes/orders.js';
 import agentApiRouter from './routes/agent-api.js';
-import * as db from './db/db.js';
+import authRouter from './routes/auth.js';
+import { authPolicy } from './middleware/auth.js';
+import { loadUsers } from './auth/userStore.js';
+import { startSweep } from './auth/sessions.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
+const AUTH_CONFIG_PATH = process.env.AUTH_CONFIG_PATH || 'config/users.json';
+
+// Before anything binds a port: a server that cannot say who its users are must
+// not come up at all.
+try {
+  loadUsers(AUTH_CONFIG_PATH);
+} catch (error) {
+  console.error(error.message);
+  process.exit(1);
+}
+
+startSweep();
 
 // Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// The policy mounts on /api ahead of every router, so a route added later is
+// admin-only until someone deliberately widens it.
+app.use('/api', authPolicy);
+
 // Routes
+app.use('/api/auth', authRouter);
 app.use('/api/products', productsRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/agent', agentApiRouter);
-
-// GET /api/properties/:id/values - List all values for a property
-app.get('/api/properties/:id/values', async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const property = await db.getProperty(id);
-    if (!property) {
-      return res.status(404).json({ error: 'Property not found' });
-    }
-
-    const values = await db.getPropertyValues(id);
-    res.json(values);
-  } catch (error) {
-    console.error('Error fetching property values:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// DELETE /api/properties/:id - Delete property and all its values
-app.delete('/api/properties/:id', async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const property = await db.getProperty(id);
-    if (!property) {
-      return res.status(404).json({ error: 'Property not found' });
-    }
-
-    // Delete all values for this property first
-    await db.dbRun('DELETE FROM propertyValues WHERE propertyId = ?', [id]);
-    // Then delete the property
-    await db.deleteProperty(id);
-    res.json({ deleted: id });
-  } catch (error) {
-    console.error('Error deleting property:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// POST /api/properties/:id/values - Add value to property
-app.post('/api/properties/:id/values', async (req, res) => {
-  const { id } = req.params;
-  const { value } = req.body;
-
-  if (!value || value.trim() === '') {
-    return res.status(400).json({ error: 'Value is required' });
-  }
-
-  try {
-    const property = await db.getProperty(id);
-    if (!property) {
-      return res.status(404).json({ error: 'Property not found' });
-    }
-
-    const { v4: uuidv4 } = await import('uuid');
-    const valueId = uuidv4();
-    await db.createPropertyValue(valueId, id, value);
-    const propValue = await db.getPropertyValue(valueId);
-    res.status(201).json(propValue);
-  } catch (error) {
-    console.error('Error adding value:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// PUT /api/propertyValues/:id - Edit property value
-app.put('/api/propertyValues/:id', async (req, res) => {
-  const { id } = req.params;
-  const { value } = req.body;
-
-  if (!value || value.trim() === '') {
-    return res.status(400).json({ error: 'Value is required' });
-  }
-
-  try {
-    const propValue = await db.getPropertyValue(id);
-    if (!propValue) {
-      return res.status(404).json({ error: 'Value not found' });
-    }
-
-    await db.updatePropertyValue(id, value);
-    const updated = await db.getPropertyValue(id);
-    res.json(updated);
-  } catch (error) {
-    console.error('Error updating property value:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// DELETE /api/propertyValues/:id - Delete property value
-app.delete('/api/propertyValues/:id', async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const propValue = await db.getPropertyValue(id);
-    if (!propValue) {
-      return res.status(404).json({ error: 'Value not found' });
-    }
-
-    await db.deletePropertyValue(id);
-    res.json({ deleted: id });
-  } catch (error) {
-    console.error('Error deleting value:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+app.use('/api', propertiesRouter);
 
 // Serve index.html for all other routes (single-page app)
 app.get('*', (req, res) => {
@@ -132,6 +46,6 @@ app.get('*', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+const server = app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${server.address().port}`);
 });

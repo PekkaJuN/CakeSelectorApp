@@ -1,0 +1,24 @@
+{
+  "sessionTtlHours": 8,
+  "hash": {
+    "algorithm": "scrypt",
+    "keyLength": 64,
+    "cost": 16384,
+    "blockSize": 8,
+    "parallelization": 1
+  },
+  "users": [
+    {
+      "username": "admin",
+      "role": "admin",
+      "salt": "2e067004d6b2e69c1300ca4e60d8f9f7",
+      "passwordHash": "114e2d548a60b32af3b071d0d66d1be30571e91f219aef2c4d3de146592a60f796ea05dca5d05d494e978c20269356adef9feb19d5e32c7dd612b9df6160dd09"
+    },
+    {
+      "username": "orderuser",
+      "role": "orderuser",
+      "salt": "20994431cd8465a85bcd7fcafdb95972",
+      "passwordHash": "f9403605f9b7fb78a214da231c3023dd11836f59de7a2252345eec0135e0c2f4d2a8b72a820cda2d9cf18ff3e3cb2da416dd3df8fc0ed92639e3b6dfd54903bf"
+    }
+  ]
+}

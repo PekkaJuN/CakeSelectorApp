@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import { propertiesRouter } from '../../src/routes/products.js';
 import * as db from '../../src/db/db.js';
 
 // AC16 Test: Property value dropdown shows all available values
@@ -30,25 +31,7 @@ test('AC16: GET /api/properties/:id/values | happy path | List all values for pr
   await db.createPropertyValue(v1Id, propId, 'light');
   await db.createPropertyValue(v2Id, propId, 'dark');
 
-  // Import server routes after db setup
-  const productsRouter = (await import('../../src/routes/products.js')).default;
-  app.use('/api/products', productsRouter);
-
-  // Add the GET /api/properties/:id/values endpoint (what we're testing)
-  app.get('/api/properties/:id/values', async (req, res) => {
-    const { id } = req.params;
-    try {
-      const property = await db.getProperty(id);
-      if (!property) {
-        return res.status(404).json({ error: 'Property not found' });
-      }
-      const values = await db.getPropertyValues(id);
-      res.json(values);
-    } catch (error) {
-      console.error('Error fetching property values:', error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  });
+  app.use('/api', propertiesRouter);
 
   // Start test server
   const server = app.listen(0);
@@ -93,21 +76,7 @@ test('AC16 variant: GET /api/properties/:id/values | not found | Property does n
   await db.dbRun('DELETE FROM properties');
   await db.dbRun('DELETE FROM products');
 
-  // Add the GET /api/properties/:id/values endpoint
-  app.get('/api/properties/:id/values', async (req, res) => {
-    const { id } = req.params;
-    try {
-      const property = await db.getProperty(id);
-      if (!property) {
-        return res.status(404).json({ error: 'Property not found' });
-      }
-      const values = await db.getPropertyValues(id);
-      res.json(values);
-    } catch (error) {
-      console.error('Error fetching property values:', error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  });
+  app.use('/api', propertiesRouter);
 
   // Start test server
   const server = app.listen(0);

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert';
 import express from 'express';
-import productsRouter from '../../src/routes/products.js';
+import productsRouter, { propertiesRouter } from '../../src/routes/products.js';
 import * as db from '../../src/db/db.js';
 
 // AC1 Test: Create product with valid name
@@ -61,6 +61,7 @@ test('AC3: POST /api/products | empty name | Create product with empty name', as
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM products');
 
@@ -104,6 +105,7 @@ test('AC4: PUT /api/products/:id | happy path | Edit product name', async () => 
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM products');
 
@@ -151,6 +153,7 @@ test('AC5: PUT /api/products/:id | empty name | Edit product to empty name', asy
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM products');
 
@@ -193,6 +196,7 @@ test('AC6: DELETE /api/products/:id | happy path | Delete product', async () => 
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM orderItems');
   await db.dbRun('DELETE FROM orders');
@@ -239,6 +243,7 @@ test('AC7: DELETE /api/products/:id | with orders | Delete product with existing
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM orderItems');
   await db.dbRun('DELETE FROM orders');
@@ -297,6 +302,7 @@ test('AC8: POST /api/products/:id/properties | happy path | Add property to prod
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM propertyValues');
   await db.dbRun('DELETE FROM properties');
@@ -351,6 +357,7 @@ test('AC9: POST /api/products/:id/properties | duplicate name | Add duplicate pr
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM propertyValues');
   await db.dbRun('DELETE FROM properties');
@@ -411,6 +418,7 @@ test('AC10: POST /api/products/:id/properties | empty name | Add property with e
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM propertyValues');
   await db.dbRun('DELETE FROM properties');
@@ -460,6 +468,7 @@ test('AC11: DELETE /api/properties/:id | happy path | Delete property from produ
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM propertyValues');
   await db.dbRun('DELETE FROM properties');
@@ -494,7 +503,7 @@ test('AC11: DELETE /api/properties/:id | happy path | Delete property from produ
 
   try {
     // When: user clicks "Delete" on property "Base"
-    const response = await fetch(`${baseUrl}/api/products/properties/${prop1Id}`, {
+    const response = await fetch(`${baseUrl}/api/properties/${prop1Id}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' }
     });
@@ -530,6 +539,7 @@ test('AC12: POST /api/properties/:id/values | happy path | Add value to property
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM propertyValues');
   await db.dbRun('DELETE FROM properties');
@@ -554,7 +564,7 @@ test('AC12: POST /api/properties/:id/values | happy path | Add value to property
 
   try {
     // When: user clicks "Add Value", enters "light", clicks "Save"
-    const response = await fetch(`${baseUrl}/api/products/properties/${propId}/values`, {
+    const response = await fetch(`${baseUrl}/api/properties/${propId}/values`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ value: 'light' })
@@ -587,6 +597,7 @@ test('AC13: POST /api/properties/:id/values | duplicate value | Add duplicate va
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM propertyValues');
   await db.dbRun('DELETE FROM properties');
@@ -614,7 +625,7 @@ test('AC13: POST /api/properties/:id/values | duplicate value | Add duplicate va
 
   try {
     // When: user enters "light" and clicks "Save"
-    const response = await fetch(`${baseUrl}/api/products/properties/${propId}/values`, {
+    const response = await fetch(`${baseUrl}/api/properties/${propId}/values`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ value: 'light' })
@@ -650,6 +661,7 @@ test('AC14: POST /api/properties/:id/values | empty value | Add value with empty
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM propertyValues');
   await db.dbRun('DELETE FROM properties');
@@ -674,7 +686,7 @@ test('AC14: POST /api/properties/:id/values | empty value | Add value with empty
 
   try {
     // When: user leaves the value field blank and clicks "Save"
-    const response = await fetch(`${baseUrl}/api/products/properties/${propId}/values`, {
+    const response = await fetch(`${baseUrl}/api/properties/${propId}/values`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ value: '' })
@@ -701,6 +713,7 @@ test('AC25: DELETE /api/propertyValues/:id | happy path | Delete property value'
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM propertyValues');
   await db.dbRun('DELETE FROM properties');
@@ -732,17 +745,25 @@ test('AC25: DELETE /api/propertyValues/:id | happy path | Delete property value'
 
   try {
     // When: user clicks "Delete" on value "dark" (v2)
-    const response = await fetch(`${baseUrl}/api/products/values/${v2Id}`, {
+    const response = await fetch(`${baseUrl}/api/propertyValues/${v2Id}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' }
     });
 
     const data = await response.json();
 
-    // Note: Router currently returns 405 (values cannot be deleted, only edited)
-    // This test documents current behavior
-    assert.strictEqual(response.status, 405, `expected status 405, got ${response.status}`);
-    assert.strictEqual(data.error, 'Property values cannot be deleted, only edited');
+    // Then: status 200 and value v2 is removed
+    assert.strictEqual(response.status, 200, `expected status 200, got ${response.status}`);
+    assert.strictEqual(data.deleted, v2Id, 'response should name the deleted value');
+
+    // Property still has ["light", "chocolate"]
+    const valuesAfter = await db.getPropertyValues(propId);
+    assert.strictEqual(valuesAfter.length, 2, 'property should have 2 values left');
+    assert.deepStrictEqual(
+      valuesAfter.map(v => v.value),
+      ['light', 'chocolate'],
+      'remaining values should be light and chocolate'
+    );
   } finally {
     server.close();
   }
@@ -752,6 +773,7 @@ test('AC16: GET /api/products | happy path | Product list displays correctly', a
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM propertyValues');
   await db.dbRun('DELETE FROM properties');
@@ -822,6 +844,7 @@ test('AC15: POST /api/properties/:id/values | whitespace only | Add value with w
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM propertyValues');
   await db.dbRun('DELETE FROM properties');
@@ -846,7 +869,7 @@ test('AC15: POST /api/properties/:id/values | whitespace only | Add value with w
 
   try {
     // When: user enters "   " (spaces only) and clicks "Add Value"
-    const response = await fetch(`${baseUrl}/api/products/properties/${propId}/values`, {
+    const response = await fetch(`${baseUrl}/api/properties/${propId}/values`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ value: '   ' })
@@ -872,6 +895,7 @@ test('AC16: POST /api/properties/:id/values | property not found | Add value whe
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM propertyValues');
   await db.dbRun('DELETE FROM properties');
@@ -889,7 +913,7 @@ test('AC16: POST /api/properties/:id/values | property not found | Add value whe
 
   try {
     // When: user attempts to add a value via API POST /api/properties/prop99/values
-    const response = await fetch(`${baseUrl}/api/products/properties/prop99/values`, {
+    const response = await fetch(`${baseUrl}/api/properties/prop99/values`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ value: 'light' })
@@ -914,6 +938,7 @@ test('AC18: POST /api/properties/:id/values | special characters | Add value wit
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM propertyValues');
   await db.dbRun('DELETE FROM properties');
@@ -935,7 +960,7 @@ test('AC18: POST /api/properties/:id/values | special characters | Add value wit
 
   try {
     // When: user enters "dark & bitter" and clicks "Add Value"
-    const response = await fetch(`${baseUrl}/api/products/properties/${propId}/values`, {
+    const response = await fetch(`${baseUrl}/api/properties/${propId}/values`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ value: 'dark & bitter' })
@@ -962,6 +987,7 @@ test('AC19: POST /api/properties/:id/values | whitespace preserved | Add value w
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM propertyValues');
   await db.dbRun('DELETE FROM properties');
@@ -983,7 +1009,7 @@ test('AC19: POST /api/properties/:id/values | whitespace preserved | Add value w
 
   try {
     // When: user enters "  light  " (with spaces) and clicks "Add Value"
-    const response = await fetch(`${baseUrl}/api/products/properties/${propId}/values`, {
+    const response = await fetch(`${baseUrl}/api/properties/${propId}/values`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ value: '  light  ' })
@@ -1011,6 +1037,7 @@ test('AC20: GET /api/properties/:id/values | happy path | List values for proper
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM propertyValues');
   await db.dbRun('DELETE FROM properties');
@@ -1039,7 +1066,7 @@ test('AC20: GET /api/properties/:id/values | happy path | List values for proper
 
   try {
     // When: user views the property details (GET /api/properties/:id/values)
-    const response = await fetch(`${baseUrl}/api/products/properties/${propId}/values`, {
+    const response = await fetch(`${baseUrl}/api/properties/${propId}/values`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
     });
@@ -1069,6 +1096,7 @@ test('AC21: GET /api/properties/:id/values | no values | List values when proper
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM propertyValues');
   await db.dbRun('DELETE FROM properties');
@@ -1090,7 +1118,7 @@ test('AC21: GET /api/properties/:id/values | no values | List values when proper
 
   try {
     // When: user views the property details (GET /api/properties/:id/values)
-    const response = await fetch(`${baseUrl}/api/products/properties/${propId}/values`, {
+    const response = await fetch(`${baseUrl}/api/properties/${propId}/values`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
     });
@@ -1113,6 +1141,7 @@ test('AC22: PUT /api/propertyValues/:id | happy path | Edit property value', asy
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM propertyValues');
   await db.dbRun('DELETE FROM properties');
@@ -1140,7 +1169,7 @@ test('AC22: PUT /api/propertyValues/:id | happy path | Edit property value', asy
 
   try {
     // When: user clicks "Edit" on value "dark", changes text to "dark chocolate", and clicks "Save"
-    const response = await fetch(`${baseUrl}/api/products/values/${valueId}`, {
+    const response = await fetch(`${baseUrl}/api/propertyValues/${valueId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ value: 'dark chocolate' })
@@ -1167,6 +1196,7 @@ test('AC23: PUT /api/propertyValues/:id | duplicate text | Edit value to duplica
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM propertyValues');
   await db.dbRun('DELETE FROM properties');
@@ -1193,7 +1223,7 @@ test('AC23: PUT /api/propertyValues/:id | duplicate text | Edit value to duplica
 
   try {
     // When: user edits "dark" to "light" (duplicate of existing value)
-    const response = await fetch(`${baseUrl}/api/products/values/${v2Id}`, {
+    const response = await fetch(`${baseUrl}/api/propertyValues/${v2Id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ value: 'light' })
@@ -1223,6 +1253,7 @@ test('AC24: PUT /api/propertyValues/:id | empty text | Edit value to empty text'
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM propertyValues');
   await db.dbRun('DELETE FROM properties');
@@ -1247,7 +1278,7 @@ test('AC24: PUT /api/propertyValues/:id | empty text | Edit value to empty text'
 
   try {
     // When: user clears the text field and clicks "Save"
-    const response = await fetch(`${baseUrl}/api/products/values/${valueId}`, {
+    const response = await fetch(`${baseUrl}/api/propertyValues/${valueId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ value: '' })
@@ -1274,6 +1305,7 @@ test('AC17: GET /api/products | property list | Property list displays correctly
   const app = express();
   app.use(express.json());
   app.use('/api/products', productsRouter);
+  app.use('/api', propertiesRouter);
 
   await db.dbRun('DELETE FROM propertyValues');
   await db.dbRun('DELETE FROM properties');
