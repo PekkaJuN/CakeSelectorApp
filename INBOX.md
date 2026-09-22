@@ -24,3 +24,15 @@
 - After a successful login or logout `login.js` reloads the page rather than rebuilding the DOM, because the app shell is removed outright when there is no session.
 - `AGENTS.md` still carries the stale "Property values cannot be deleted" constraint from the round-1 conflict; the two-role rewrite deliberately left it alone because that one is still yours to rule on.
 - The prio 1-10 task list was derived from the spec's "Files to Modify" table, which silently dropped the Products, Orders and Agent rows of its Testing Strategy — 17 ACs had no test until prio 11 was added. A task list built from a spec should be checked against its testing strategy too, not only its file list.
+- `cake_database_tool.py` exits 1 on a valid query with zero matches, so the recommender FastAPI reads "no vegan cake that size" as a crash and the user is told the agent is down and to check port 8003. Verified: `--query nut-free` prints `count: 0` and exits 1.
+- The Recommendations tab offers "Nut-Free", which sends `nut-free`; `query_cakes` compares the normalised `nutfree` against the literal `nutsfree`, misses, and excludes every cake. No cake in `CAKES_DB` carries a nut flag at all.
+- `timeout: 30000` in the three `fetch()` calls in `src/routes/agent-api.js` is not an option Node's fetch recognises and is silently dropped — there is no timeout on any agent call today.
+- The recommender answers from a hardcoded five-cake Python list with no relationship to the SQLite `products` table, so a recommendation cannot become an order item without the user matching names by eye.
+- `initOrderBuilder`'s catch is a bare `console.error`, so a failed `GET /api/products` and an empty catalog both render as a working-looking empty dropdown.
+- The cart is a plain in-memory array and the 401 interceptor reloads the page, so an expired session silently discards an order in progress.
+- Order save confirms with `alert()`, which blocks the page and is skipped by some screen readers.
+- Only `#login-message` has `role="alert"`; `#order-error` and `#recommendation-error` are silent divs, and the two loading containers have no `aria-live`.
+- No modal handles Escape, none traps focus, and none returns focus to its opener; every list re-renders via `innerHTML`, dropping focus to `<body>`.
+- Nothing disables Save Order between click and response, so a double click can create two orders.
+- Both agent FastAPI services are unauthenticated with `allow_origins=["*"]`, and `order-reporter` accepts a client-supplied `database_url` in the request body.
+- `users.txt` and `varmuuskopio.db` sit untracked in the repo root, neither ignored nor explained; one is a database backup and the other sits beside a credentials feature.
