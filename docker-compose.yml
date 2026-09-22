@@ -1,0 +1,50 @@
+name: cake-selector
+
+services:
+  app:
+    build: .
+    image: cake-selector-app:local
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      DB_PATH: /data/cake-selector.db
+      AUTH_CONFIG_PATH: /app/config/users.json
+      ORDER_REPORTER_API_URL: http://order-reporter:8002
+      CAKE_RECOMMENDER_API_URL: http://cake-recommender:8003
+      # Set to "true" only when a TLS-terminating proxy sits in front, otherwise
+      # the Secure flag keeps the session cookie from ever coming back.
+      HTTPS: "false"
+    volumes:
+      - cake-data:/data
+      # Credentials stay on the host: the image is built without them on purpose.
+      - ./config/users.json:/app/config/users.json:ro
+    depends_on:
+      order-reporter:
+        condition: service_healthy
+      cake-recommender:
+        condition: service_healthy
+    restart: unless-stopped
+
+  order-reporter:
+    build: ./agents/order-reporter-agent
+    image: cake-order-reporter:local
+    environment:
+      PORT: "8002"
+      # The reporter reads the same SQLite file the app writes, so it shares the
+      # volume rather than going through the REST API.
+      DATABASE_URL: /data/cake-selector.db
+    volumes:
+      - cake-data:/data
+    restart: unless-stopped
+
+  cake-recommender:
+    build: ./agents/cake-recommender-agent
+    image: cake-recommender:local
+    environment:
+      PORT: "8003"
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    restart: unless-stopped
+
+volumes:
+  cake-data:

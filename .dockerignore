@@ -1,0 +1,16 @@
+node_modules/
+.git/
+.env
+*.db
+config/users.json
+users.txt
+**/tests/
+**/test/
+**/__pycache__/
+**/*.pyc
+*.log
+.DS_Store
+.claude/
+docs/
+specs/
+*.md

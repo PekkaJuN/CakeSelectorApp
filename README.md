@@ -72,6 +72,36 @@ Sessions live in memory, so restarting the server logs everyone out.
 `npm run dev` restarts on every file save, which makes this a routine event
 rather than an edge case.
 
+## Docker
+
+`docker compose up --build` brings up three containers: the Express app on
+`http://localhost:3000`, the order reporter on an internal port 8002 and the
+cake recommender on 8003. Only the app publishes a port; the agents are reached
+through `/api/agent/*`, so nothing else needs to be exposed.
+
+Two things are deliberately kept out of the images and have to come from the
+host:
+
+- **`config/users.json`** is bind-mounted read-only. The app exits with code 1
+  if it is missing, so create it first (see First Run).
+- **The database** lives in the named volume `cake-data`, not in the image, and
+  the entrypoint initializes the schema on first boot. An existing
+  `cake-selector.db` can be carried over with:
+
+  ```bash
+  docker compose up -d
+  docker compose cp cake-selector.db app:/data/cake-selector.db
+  docker compose restart app
+  ```
+
+The reporter mounts that same volume, because it reads the SQLite file directly
+rather than through the REST API. `GEMINI_API_KEY` is passed through from the
+host environment or the root `.env`; it is never baked into an image.
+
+Sessions are still in memory, so a `docker compose restart` logs everyone out
+and the app cannot be scaled past one replica. Behind a TLS proxy, set
+`HTTPS=true` on the `app` service so the session cookie gets its `Secure` flag.
+
 ## Project Status
 
 - ✅ Product Management: Complete
