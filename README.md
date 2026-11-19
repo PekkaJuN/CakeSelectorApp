@@ -1,6 +1,6 @@
 # CakeSelectorApp
 
-Cake selector application for training
+Cake selector application for training in Saranen/ModernPath AI-assisted coding course
 
 ## Overview
 
